@@ -1,3 +1,3 @@
-# Powershell DevOp Tools
+# DevOpTools
 
-Some cmdlets helping in development and testing.
+A collection of DevOps related PowerShell cmdlets.

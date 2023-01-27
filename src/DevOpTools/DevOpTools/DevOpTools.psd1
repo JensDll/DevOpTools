@@ -15,7 +15,7 @@
   Copyright         = 'Copyright (c) 2022 Jens Döllmann'
 
   # Description of the functionality provided by this module
-  Description       = 'PowerShell DevOp tools. Some cmdlets for development.'
+  Description       = 'A collection of DevOps related cmdlets.'
 
   # Minimum version of the PowerShell engine required by this module
   PowerShellVersion = '5.0'

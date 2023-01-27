@@ -1,7 +1,0 @@
-# Directories
-node_modules
-dist
-
-# Files
-Dockerfile*
-public/config.js

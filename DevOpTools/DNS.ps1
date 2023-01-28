@@ -1,4 +1,4 @@
-﻿$hostFilePath = 'C:\Windows\System32\drivers\etc\hosts'
+﻿$HostFilePath = 'C:\Windows\System32\drivers\etc\hosts'
 
 <#
 .DESCRIPTION
@@ -37,9 +37,9 @@ function Add-DNSEntries() {
 
   Remove-DNSEntries -Domain $Domain
 
-  Write-Verbose "Writing DNS entries to location: $hostFilePath"
+  Write-Verbose "Writing DNS entries to location: $HostFilePath"
 
-  $hasNewlime = (Get-Content $hostFilePath -Raw) -Match [System.Environment]::NewLine + '$'
+  $hasNewlime = (Get-Content $HostFilePath -Raw) -Match [System.Environment]::NewLine + '$'
 
   $entries = ($hasNewlime ? '' : [System.Environment]::NewLine) + "$IPAddress $Domain # Added by PowerShell DevOp Tools"
 
@@ -47,10 +47,10 @@ function Add-DNSEntries() {
     $entries += [System.Environment]::NewLine + "$IPAddress $subdomain.$Domain # Added by PowerShell DevOp Tools"
   }
 
-  Add-Content -Path $hostFilePath -Value $entries -NoNewline
-  
+  Add-Content -Path $HostFilePath -Value $entries -NoNewline
+
   if ($isVerbose) {
-    Get-Content $hostFilePath -Raw
+    Get-Content $HostFilePath -Raw
     Write-Verbose 'Done ... Press Enter to exit:'
     Read-Host 1> $null
   }
@@ -71,25 +71,25 @@ function Remove-DNSEntries() {
   )
 
   Invoke-Privileged -Function 'Remove-DNSEntries' @PSBoundParameters
-  
+
   if (-not (Test-Admin)) {
     return
   }
-  
+
   $isVerbose = $PSBoundParameters['Verbose'] -eq $true
-  
+
   $lines = @()
 
-  foreach ($line in Get-Content $hostFilePath) {
+  foreach ($line in Get-Content $HostFilePath) {
     if ($line -NotMatch "$Domain # Added by PowerShell DevOp Tools") {
       $lines += $line
     }
   }
 
-  Set-Content -Path $hostFilePath -Value ($lines -join [System.Environment]::NewLine) -NoNewline
+  Set-Content -Path $HostFilePath -Value ($lines -join [System.Environment]::NewLine) -NoNewline
 
   if ($isVerbose) {
-    Get-Content $hostFilePath -Raw
+    Get-Content $HostFilePath -Raw
     Write-Verbose 'Done ... Press Enter to exit:'
     Read-Host 1> $null
   }

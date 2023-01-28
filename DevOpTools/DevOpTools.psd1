@@ -32,9 +32,11 @@
     'Invoke-Privileged',
 
     # TLS
-    'New-RootCA',
-    'Get-RootCACertificate',
-    'Import-RootCA',
+    'New-DevOpToolsRootCA',
+    'New-DevOpToolsSubordinateCA',
+    'New-DevOpToolsCertificate',
+    'Import-DevOpToolsRootCA',
+    'Remove-DevOpToolsCertificates'
 
     # DNS
     'Add-DNSEntries',

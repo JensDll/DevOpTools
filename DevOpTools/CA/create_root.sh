@@ -1,25 +1,23 @@
 #!/bin/bash
 
-SCRIPT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-RESET="\033[0m"
-RED="\033[0;31m"
-YELLOW="\033[0;33m"
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+declare -r script_dir
+declare -r reset="\033[0m"
+declare -r red="\033[0;31m"
+declare -r yellow="\033[0;33m"
 
 __usage()
 {
-  echo "Usage: $(basename "${BASH_SOURCE[0]}") [options]
-Options:
-    --home
-"
+  echo "Usage: $(basename "${BASH_SOURCE[0]}") --home <path>"
   exit 2
 }
 
 __error() {
-  echo -e "${RED}error: $*${RESET}" 1>&2
+  echo -e "${red}error: $*${reset}" 1>&2
 }
 
 __warn() {
-  echo -e "${YELLOW}warning: $*${RESET}"
+  echo -e "${yellow}warning: $*${reset}"
 }
 
 while [[ $# -gt 0 ]]
@@ -33,8 +31,7 @@ do
     ;;
   -home)
     shift
-    export CA_HOME="$1"
-    [[ -z $CA_HOME ]] && __error "Missing value for parameter --home" && __usage
+    export DEVOPTOOLS_CA_HOME="$1"
     ;;
   *)
     __error "Unknown option: $1" && __usage
@@ -44,21 +41,23 @@ do
   shift
 done
 
-export CA_DOMAIN=''
+[[ -z $DEVOPTOOLS_CA_HOME ]] && __error "Missing value for parameter --home" && __usage
 
-config="$SCRIPT_ROOT/root.conf"
-name='root_ca'
+declare -r config="$script_dir/root.conf"
 
-csr="$CA_HOME/$name.csr"
-key="$CA_HOME/private/$name.key"
-crt="$CA_HOME/$name.crt"
-pfx="$CA_HOME/$name.pfx"
+declare -r name=root_ca
 
-openssl req -new -config "$config" -out "$csr" -keyout "$key" -noenc
+declare -r csr="$DEVOPTOOLS_CA_HOME/$name.csr"
+declare -r key="$DEVOPTOOLS_CA_HOME/private/$name.key"
+declare -r crt="$DEVOPTOOLS_CA_HOME/$name.crt"
+declare -r pfx="$DEVOPTOOLS_CA_HOME/$name.pfx"
+
+openssl req -new -config "$config" -out "$csr" -keyout "$key" \
+  -noenc 2> /dev/null
 
 openssl ca -selfsign -config "$config" -in "$csr" -out "$crt" \
-  -extensions ca_ext -batch
+  -extensions ca_ext -notext -batch
 
 openssl pkcs12 -export -in "$crt" -inkey "$key" \
-  -name 'DevOpTools development root CA' \
-  -out "$pfx" -password 'pass:'
+  -name 'DevOpTools Development Root CA' \
+  -out "$pfx" -passout 'pass:'

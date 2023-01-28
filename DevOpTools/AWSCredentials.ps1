@@ -1,6 +1,6 @@
 ﻿. $PSScriptRoot\Env.ps1
 
-$credentialsFilePath = Join-Path $env:DEV_OP_TOOLS_HOME aws-credentials
+$CredentialsFilePath = Join-Path $env:DEV_OP_TOOLS_HOME aws-credentials
 
 <#
 .DESCRIPTION
@@ -20,9 +20,9 @@ function New-AWSCredentials {
     [switch]$Recreate
   )
 
-  if (-not (Test-Path $credentialsFilePath)) {
-    Write-Verbose "Creating new AWS credentials file at '$credentialsFilePath'"
-    New-Item $credentialsFilePath -Force -ItemType File 1> $null
+  if (-not (Test-Path $CredentialsFilePath)) {
+    Write-Verbose "Creating new AWS credentials file at '$CredentialsFilePath'"
+    New-Item $CredentialsFilePath -Force -ItemType File 1> $null
   }
 
   if ($Recreate) {
@@ -60,8 +60,8 @@ function Read-AWSCredentials {
     throw
   }
 
-  $accessKey = git config --file $credentialsFilePath --get "$UserName.accessKey"
-  $secretKey = git config --file $credentialsFilePath --get "$UserName.secretKey"
+  $accessKey = git config --file $CredentialsFilePath --get "$UserName.accessKey"
+  $secretKey = git config --file $CredentialsFilePath --get "$UserName.secretKey"
 
   return @{
     AccessKey = $accessKey
@@ -88,7 +88,7 @@ function Remove-AWSCredentials {
 
   Remove-IAMCredentials $UserName
 
-  git config --file $credentialsFilePath --remove-section $UserName
+  git config --file $CredentialsFilePath --remove-section $UserName
 }
 
 function Write-AWSCredentials {
@@ -99,8 +99,8 @@ function Write-AWSCredentials {
 
   $credentials = (aws iam create-access-key --user-name $UserName --query 'AccessKey.[AccessKeyId, SecretAccessKey]' --output text) -split '\s+'
 
-  git config --file $credentialsFilePath "$UserName.accessKey" $credentials[0]
-  git config --file $credentialsFilePath "$UserName.secretKey" $credentials[1]
+  git config --file $CredentialsFilePath "$UserName.accessKey" $credentials[0]
+  git config --file $CredentialsFilePath "$UserName.secretKey" $credentials[1]
 }
 
 function Test-AWSCredentials {
@@ -109,7 +109,7 @@ function Test-AWSCredentials {
     [string]$UserName
   )
 
-  return [bool] (git config --get --file $credentialsFilePath "$UserName.accessKey")
+  return [bool] (git config --get --file $CredentialsFilePath "$UserName.accessKey")
 }
 
 function Remove-IAMCredentials {

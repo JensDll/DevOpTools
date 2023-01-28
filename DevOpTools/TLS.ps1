@@ -1,49 +1,118 @@
 ﻿. $PSScriptRoot\WSL.ps1
 
-$caHome = Join-Path $env:DEV_OP_TOOLS_HOME root_ca
-$caHomeWsl = ConvertTo-WSLPath -Path $caHome
+$CaHome = Join-Path $env:DEV_OP_TOOLS_HOME root_ca
+$CaHomeWsl = ConvertTo-WSLPath -Path $caHome
 
-$certs = Join-Path $caHome certs
-$db = Join-Path $caHome db
-$dbIndex = Join-Path $db index
-$private = Join-Path $caHome private
+$Certs = Join-Path $CaHome certs
+$Db = Join-Path $CaHome db
+$DbIndex = Join-Path $Db index
+$Private = Join-Path $CaHome private
 
-<#
-.DESCRIPTION
-Create a new root certificate authority for development and import it
-to the user's trusted root certificate store.
-
-.PARAMETER Domain
-The domain for which this certificate authority is allowed to sign certificates.
-#>
-function New-RootCA() {
+function New-DevOpToolsRootCA() {
   [CmdletBinding()]
-  param(
-    [switch]$Force
-  )
+  param()
 
-  if (-not (Test-Path $private)) {
-    New-Item $certs, $db, $private -ItemType Directory 1> $null
-    $startIndex = (1..4 | ForEach-Object { '{0:X4}' -f (Get-Random -Max 0xFFFF) }) -join ''
-    New-Item $dbIndex -ItemType File -Value $startIndex 1> $null
+  if (Test-Path "$CaHome/root_ca.pfx") {
+    return
   }
 
-  wsl --exec "$WSLScriptRoot/CA/create_root.sh" --home $caHomeWsl
+  if (-not (Test-Path $Private)) {
+    New-Item $Certs, $Db, $Private -ItemType Directory 1> $null
+    New-Item $DbIndex -ItemType File 1> $null
+  }
 
-  # Import-PfxCertificate -FilePath "$caHome/root_ca.pfx" -CertStoreLocation Cert:\CurrentUser\My -Exportable 1> $null
+  wsl --exec "$WSLScriptRoot/CA/create_root.sh" --home $CaHomeWsl
+
+  $certPath = Join-Path $CaHome root_ca.pfx
+  Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\My -Exportable 1> $null
 }
 
-function Get-RootCACertificate() {
+function New-DevOpToolsSubordinateCA() {
   [CmdletBinding()]
   param(
-    [Parameter(Mandatory, Position = 0)]
-    [string]$Domain
+    [Parameter(Mandatory)]
+    [string] $PermittedDNS
   )
 
-  wsl --exec "$WSLScriptRoot/CA/create_sub.sh" --home $caHomeWsl --domain $Domain
+  wsl --exec "$WSLScriptRoot/CA/create_sub.sh" --home $CaHomeWsl --permitted-dns $PermittedDNS
+
+  $certPath = Join-Path $CaHome sub_ca.pfx
+  Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\My -Exportable 1> $null
 }
 
-function Import-RootCA() {
-  $certPath = Join-Path $caHome root_ca.pfx
-  Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\Root 1> $null
+function New-DevOpToolsCertificate() {
+  [CmdletBinding()]
+  param(
+    [Parameter(Mandatory)]
+    [string] $RequestConfig,
+    [Parameter(Mandatory)]
+    [string] $Name,
+    [string] $Destination = $(Resolve-Path -Path .)
+  )
+
+  if (-not (Test-Path $Destination)) {
+    New-Item $Destination -ItemType Directory 1> $null
+  }
+
+  wsl --exec "$WSLScriptRoot/CA/new_cert.sh" `
+    --home $CaHomeWsl `
+    --destination (ConvertTo-WSLPath -Path $Destination) `
+    --name $Name `
+    --type server `
+    --request-config (ConvertTo-WSLPath -Path $RequestConfig)
+}
+
+function Import-DevOpToolsRootCA() {
+  $certPath = Join-Path $CaHome root_ca.crt
+  $result = Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\Root
+  $result[0].FriendlyName = 'DevOpTools Development Root CA'
+}
+
+function Remove-DevOpToolsCertificates() {
+  [CmdletBinding()]
+  param()
+
+  if (-not (Test-Path $DbIndex)) {
+    return
+  }
+
+  $lookup = [System.Collections.Generic.HashSet[string]]::new()
+
+  foreach ($line in Get-Content $DbIndex) {
+    $parts = $line -split '\t'
+    $serialNumber = [string]$parts[3]
+    $lookup.Add($serialNumber) | Out-Null
+  }
+
+  foreach ($storeName in 'My', 'Root') {
+    $storeLocation = [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
+
+    $store = [System.Security.Cryptography.X509Certificates.X509Store]::new($storeName, $storeLocation)
+    if (-not $?) {
+      Write-Error "Failed to access the $storeLocation\$storeName certificate store!"
+      return
+    }
+
+    $openFlag = [System.Security.Cryptography.X509Certificates.OpenFlags]::MaxAllowed
+    $store.open($openFlag)
+    if (-not $?) {
+      Write-Error "Failed to open the $storeLocation\$storeName certificate store with $openFlag privileges!"
+      return
+    }
+
+    $store.Certificates | ForEach-Object {
+      if ($lookup.Contains($_.SerialNumber)) {
+        $store.Remove($_)
+        if ($?) {
+          Write-Verbose "Removed certificate with serial number '$($_.SerialNumber)' from the $storeLocation\$storeName certificate store."
+        } else {
+          Write-Error "Failed to remove certificate with serial number '$($_.SerialNumber)' from the $storeLocation\$storeName certificate store!"
+        }
+      }
+    }
+
+    $store.close()
+  }
+
+  Remove-Item -Recurse -Force $CaHome
 }

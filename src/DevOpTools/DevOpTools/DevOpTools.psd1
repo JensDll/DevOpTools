@@ -33,6 +33,7 @@
 
     # TLS
     'New-RootCA',
+    'Import-RootCA',
 
     # DNS
     'Add-DNSEntries',

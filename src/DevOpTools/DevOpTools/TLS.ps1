@@ -1,7 +1,8 @@
-﻿. $PSScriptRoot\Utils.ps1
+﻿. $PSScriptRoot\WSL.ps1
 
-$caHome = "$ConfigPath\root-ca"
-$caHomeWSL = ConvertTo-WSLPath $caHome
+$name = 'root_ca'
+$caHome = Join-Path $env:DEV_OP_TOOLS_HOME root_ca
+$caHomeWsl = ConvertTo-WSLPath -Path $caHome
 
 <#
 .DESCRIPTION
@@ -23,32 +24,13 @@ function New-RootCA() {
     New-Item "$caHome\db\index" -ItemType File 1> $null
   }
 
-  $cert = Get-ChildItem -Path Cert:\CurrentUser\Root -SSLServerAuthentication -DnsName $Domain
+  wsl --exec "$WSLScriptRoot/create_root_ca.sh" --domain $Domain --home $caHomeWsl
 
-  if ($cert) {
-    Write-Verbose 'Using existing certificate'
+  # $certPath = Join-Path $caHome "$name.pfx"
+  # Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\My -Exportable 1> $null
+}
 
-    $password = [System.Security.SecureString]::new()
-    Export-PfxCertificate -Cert $cert -FilePath "$caHome\certs\tls.p12" -Password $password 1> $null
-
-    wsl --exec openssl pkcs12 `
-      -in "$caHomeWSL/certs/tls.p12" `
-      -out "$caHomeWSL/certs/tls.crt" `
-      -nokeys `
-      -noenc `
-      -password 'pass:'
-
-    wsl --exec openssl pkcs12 `
-      -in "$caHomeWSL/certs/tls.p12" `
-      -out "$caHomeWSL/private/tls.key" `
-      -nocerts `
-      -noenc `
-      -password 'pass:'
-
-    return
-  }
-
-  wsl --exec "$WSLScriptRoot/create-root-ca.sh" --domain $Domain --home $caHomeWSL
-
-  Import-PfxCertificate -FilePath "$caHome\certs\tls.p12" -CertStoreLocation Cert:\CurrentUser\Root -Exportable 1> $null
+function Import-RootCA() {
+  $certPath = Join-Path $caHome "$name.pfx"
+  Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\Root 1> $null
 }

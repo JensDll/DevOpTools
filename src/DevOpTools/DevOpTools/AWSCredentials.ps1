@@ -1,6 +1,6 @@
-﻿. $PSScriptRoot\Utils.ps1
+﻿. $PSScriptRoot\Env.ps1
 
-$credentialsFilePath = "$ConfigPath\aws-credentials"
+$credentialsFilePath = Join-Path $env:DEV_OP_TOOLS_HOME aws-credentials
 
 <#
 .DESCRIPTION
@@ -34,7 +34,7 @@ function New-AWSCredentials {
       Get-Help New-AWSCredentials -Parameter Recreate
       throw
     }
-    
+
     Write-Verbose "Creating new AWS credentials for user '$UserName'"
   }
 
@@ -85,9 +85,9 @@ function Remove-AWSCredentials {
   )
 
   Write-Verbose "Removing AWS credentials for user '$UserName'"
-  
+
   Remove-IAMCredentials $UserName
-  
+
   git config --file $credentialsFilePath --remove-section $UserName
 }
 

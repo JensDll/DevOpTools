@@ -33,6 +33,8 @@
 
     # TLS
     'New-RootCA',
+    'Get-RootCACertificate',
+    'Import-RootCA',
 
     # DNS
     'Add-DNSEntries',
@@ -55,10 +57,10 @@
       Tags       = @('powershell', 'devops', 'Windows')
 
       # A URL to the license for this module.
-      LicenseUri = 'https://github.com/JensDll/devops/blob/main/src/DevOpTools/LICENSE'
+      LicenseUri = 'https://github.com/JensDll/DevOpTools/blob/main/LICENSE'
 
       # A URL to the main website for this project.
-      ProjectUri = 'https://github.com/JensDll/devops/tree/main/src/DevOpTools'
+      ProjectUri = 'https://github.com/JensDll/DevOpTools'
     }
   }
 }

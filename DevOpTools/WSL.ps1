@@ -17,13 +17,10 @@ function ConvertTo-WSLPath {
       param(
         [System.Text.RegularExpressions.Match]$match
       )
-    
+
       return "/mnt/$($match.Groups[1].Value.ToLower())/"
     }
   )
 
   return $wslPath
 }
-
-$WSLScriptRoot = ConvertTo-WSLPath $MyInvocation.PSScriptRoot
-$ConfigPath = Join-Path -Path (Resolve-Path '~') -ChildPath '.devoptools'

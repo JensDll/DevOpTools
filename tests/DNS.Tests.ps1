@@ -77,7 +77,7 @@ Describe 'DNS' {
       Remove-DNSEntries -Domain 'example.com'
       Remove-DNSEntries -Domain 'example.com'
       Remove-DNSEntries -Domain 'example.com'
-      
+
       # Assert
       $hostFilePath | Should -FileContentMatchExactly '^# Some comment'
       $hostFilePath | Should -FileContentMatchExactly '^192.168.3.4 foo.com'

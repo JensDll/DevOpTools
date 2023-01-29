@@ -3,7 +3,7 @@
   RootModule        = 'DevOpTools.psm1'
 
   # Version number of this module.
-  ModuleVersion     = '0.0.7'
+  ModuleVersion     = '0.0.8'
 
   # ID used to uniquely identify this module
   GUID              = '0d0e7a69-7247-4979-a599-73850459367e'

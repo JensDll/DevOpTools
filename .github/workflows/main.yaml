@@ -1,4 +1,4 @@
-name: Main workflow
+name: Main
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
       - 'main'
   release:
     types:
-      - published
+      - 'published'
 
 jobs:
   test:

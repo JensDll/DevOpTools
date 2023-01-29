@@ -1,0 +1,16 @@
+name: Publish PowerShell Gallery
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  main:
+    runs-on: ubuntu-22.04
+    environment: PowerShellGallery
+    steps:
+      - name: Checking out the repository
+        uses: actions/checkout@v3
+      - name: Publishing to PowerShell Gallery
+        shell: pwsh
+        run: Publish-Module -Path DevOpTools -NugetAPIKey ${{ secrets.API_KEY }} -WhatIf -Verbose

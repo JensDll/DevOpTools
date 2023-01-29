@@ -1,14 +1,11 @@
-name: Code quality
+name: Testing
 
 on:
-  pull_request:
-  push:
-    branches:
-      - 'main'
+  workflow_call:
 
 jobs:
-  testing:
-    runs-on: ubuntu-latest
+  main:
+    runs-on: ubuntu-22.04
     steps:
       - name: Checking out the repository
         uses: actions/checkout@v3

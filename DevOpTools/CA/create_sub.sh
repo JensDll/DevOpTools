@@ -1,7 +1,8 @@
 #!/bin/bash
 
-script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-declare -r script_dir
+CA_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+export CA_ROOT
+
 declare -r reset="\033[0m"
 declare -r red="\033[0;31m"
 declare -r yellow="\033[0;33m"
@@ -31,11 +32,15 @@ do
     ;;
   -home)
     shift
-    export DEVOPTOOLS_CA_HOME="$1"
+    export CA_SUB_HOME="$1"
     ;;
-  -permitted-dns)
+  -home-root)
     shift
-    export DEVOPTOOLS_CA_PERMITTED_DNS="$1"
+    export CA_ROOT_HOME="$1"
+    ;;
+  -name)
+    shift
+    declare -r name="$1"
     ;;
   *)
     __error "Unknown option: $1" && __usage
@@ -45,18 +50,17 @@ do
   shift
 done
 
-[[ -z $DEVOPTOOLS_CA_HOME ]] && __error "Missing value for parameter --home" && __usage
-[[ -z $DEVOPTOOLS_CA_PERMITTED_DNS ]] && __error "Missing value for parameter --permitted-dns" && __usage
+[[ -z $CA_SUB_HOME ]] && __error "Missing value for parameter --home" && __usage
+[[ -z $CA_ROOT_HOME ]] && __error "Missing value for parameter --home-root" && __usage
+[[ -z $name ]] && __error "Missing value for parameter --name" && __usage
 
-declare -r root_config="$script_dir/root.conf"
-declare -r sub_config="$script_dir/sub.conf"
+declare -r root_config="$CA_ROOT/root.conf"
+declare -r sub_config="$CA_ROOT/sub.conf"
 
-declare -r name=sub_ca
-
-declare -r csr="$DEVOPTOOLS_CA_HOME/$name.csr"
-declare -r key="$DEVOPTOOLS_CA_HOME/private/$name.key"
-declare -r crt="$DEVOPTOOLS_CA_HOME/$name.crt"
-declare -r pfx="$DEVOPTOOLS_CA_HOME/$name.pfx"
+declare -r csr="$CA_SUB_HOME/ca.csr"
+declare -r key="$CA_SUB_HOME/private/ca.key"
+declare -r crt="$CA_SUB_HOME/ca.crt"
+declare -r pfx="$CA_SUB_HOME/ca.pfx"
 
 openssl req -new -config "$sub_config" -out "$csr" -keyout "$key" \
   -noenc 2> /dev/null
@@ -65,5 +69,5 @@ openssl ca -config "$root_config" -in "$csr" -out "$crt" \
   -extensions sub_ca_ext -notext -batch
 
 openssl pkcs12 -export -in "$crt" -inkey "$key" \
-  -name 'DevOpTools Development Subordinate CA' \
+  -name "DevOpTools Development Subordinate CA ($name)" \
   -out "$pfx" -password 'pass:'

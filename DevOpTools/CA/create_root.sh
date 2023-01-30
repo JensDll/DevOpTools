@@ -1,7 +1,8 @@
 #!/bin/bash
 
-script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-declare -r script_dir
+CA_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+export CA_ROOT
+
 declare -r reset="\033[0m"
 declare -r red="\033[0;31m"
 declare -r yellow="\033[0;33m"
@@ -31,7 +32,7 @@ do
     ;;
   -home)
     shift
-    export DEVOPTOOLS_CA_HOME="$1"
+    export CA_ROOT_HOME="$1"
     ;;
   *)
     __error "Unknown option: $1" && __usage
@@ -41,16 +42,14 @@ do
   shift
 done
 
-[[ -z $DEVOPTOOLS_CA_HOME ]] && __error "Missing value for parameter --home" && __usage
+[[ -z $CA_ROOT_HOME ]] && __error "Missing value for parameter --home" && __usage
 
-declare -r config="$script_dir/root.conf"
+declare -r config="$CA_ROOT/root.conf"
 
-declare -r name=root_ca
-
-declare -r csr="$DEVOPTOOLS_CA_HOME/$name.csr"
-declare -r key="$DEVOPTOOLS_CA_HOME/private/$name.key"
-declare -r crt="$DEVOPTOOLS_CA_HOME/$name.crt"
-declare -r pfx="$DEVOPTOOLS_CA_HOME/$name.pfx"
+declare -r csr="$CA_ROOT_HOME/ca.csr"
+declare -r key="$CA_ROOT_HOME/private/ca.key"
+declare -r crt="$CA_ROOT_HOME/ca.crt"
+declare -r pfx="$CA_ROOT_HOME/ca.pfx"
 
 openssl req -new -config "$config" -out "$csr" -keyout "$key" \
   -noenc 2> /dev/null

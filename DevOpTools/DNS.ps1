@@ -41,10 +41,10 @@ function Add-DNSEntries() {
 
   $hasNewlime = (Get-Content $HostFilePath -Raw) -Match [System.Environment]::NewLine + '$'
 
-  $entries = ($hasNewlime ? '' : [System.Environment]::NewLine) + "$IPAddress $Domain # Added by PowerShell DevOp Tools"
+  $entries = ($hasNewlime ? '' : [System.Environment]::NewLine) + "$IPAddress $Domain # Added by PowerShell DevOpTools"
 
   foreach ($subdomain in $Subdomains) {
-    $entries += [System.Environment]::NewLine + "$IPAddress $subdomain.$Domain # Added by PowerShell DevOp Tools"
+    $entries += [System.Environment]::NewLine + "$IPAddress $subdomain.$Domain # Added by PowerShell DevOpTools"
   }
 
   Add-Content -Path $HostFilePath -Value $entries -NoNewline
@@ -81,7 +81,7 @@ function Remove-DNSEntries() {
   $lines = @()
 
   foreach ($line in Get-Content $HostFilePath) {
-    if ($line -NotMatch "$Domain # Added by PowerShell DevOp Tools") {
+    if ($line -NotMatch "$Domain # Added by PowerShell DevOpTools") {
       $lines += $line
     }
   }
@@ -90,7 +90,7 @@ function Remove-DNSEntries() {
 
   if ($isVerbose) {
     Get-Content $HostFilePath -Raw
-    Write-Verbose 'Done ... Press Enter to exit:'
+    Write-Verbose 'Done ... Press Enter to exit'
     Read-Host 1> $null
   }
 }

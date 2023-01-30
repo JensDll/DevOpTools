@@ -1,68 +1,110 @@
 ﻿. $PSScriptRoot\WSL.ps1
 
-$CaHome = Join-Path $env:DEV_OP_TOOLS_HOME root_ca
-$CaHomeWsl = ConvertTo-WSLPath -Path $caHome
+$IncludeDir = Join-Path $PSScriptRoot CA include
 
-$Certs = Join-Path $CaHome certs
-$Db = Join-Path $CaHome db
-$DbIndex = Join-Path $Db index
-$Private = Join-Path $CaHome private
+$CaRootDir = Join-Path $DevOpToolsHome ca root
+$CaSubDir = Join-Path $DevOpToolsHome ca sub
 
-function New-DevOpToolsRootCA() {
+function New-RootCA() {
   [CmdletBinding()]
   param()
 
-  if (Test-Path "$CaHome/root_ca.pfx") {
+  if (Test-CA -Root root_ca) {
+    Write-Warning 'Root CA already exists (skipping)'
     return
   }
 
-  if (-not (Test-Path $Private)) {
-    New-Item $Certs, $Db, $Private -ItemType Directory 1> $null
-    New-Item $DbIndex -ItemType File 1> $null
-  }
+  $ca = Initialize-CA -Root root_ca
 
-  wsl --exec "$WSLScriptRoot/CA/create_root.sh" --home $CaHomeWsl
-
-  $certPath = Join-Path $CaHome root_ca.pfx
-  Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\My -Exportable 1> $null
+  wsl --exec "$WSLScriptRoot/CA/create_root.sh" --home $ca.Home
 }
 
-function New-DevOpToolsSubordinateCA() {
+function New-SubordinateCA() {
   [CmdletBinding()]
   param(
-    [Parameter(Mandatory)]
-    [string] $PermittedDNS
-  )
-
-  wsl --exec "$WSLScriptRoot/CA/create_sub.sh" --home $CaHomeWsl --permitted-dns $PermittedDNS
-
-  $certPath = Join-Path $CaHome sub_ca.pfx
-  Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\My -Exportable 1> $null
-}
-
-function New-DevOpToolsCertificate() {
-  [CmdletBinding()]
-  param(
-    [Parameter(Mandatory)]
-    [string] $RequestConfig,
     [Parameter(Mandatory)]
     [string] $Name,
-    [string] $Destination = $(Resolve-Path -Path .)
+    [string[]] $PermittedDNS = @()
   )
+
+  if (Test-CA $Name) {
+    Write-Warning "Subordinate CA with name '$Name' already exists (skipping)"
+    return
+  }
+
+  $ca = Initialize-CA $Name
+
+  $subCaExt = @"
+[sub_ca_ext]
+authorityKeyIdentifier  = keyid:always
+basicConstraints = critical,CA:true,pathlen:0
+extendedKeyUsage = serverAuth,clientAuth
+keyUsage = critical,keyCertSign,cRLSign
+subjectKeyIdentifier = hash
+"@
+
+  if ($PermittedDNS) {
+    $subCaExt += @"
+
+nameConstraints = @name_constraints
+[name_constraints]
+excluded;IP.0 = 0.0.0.0/0.0.0.0
+excluded;IP.1 = 0:0:0:0:0:0:0:0/0:0:0:0:0:0:0:0
+$(($PermittedDNS | ForEach-Object { 'permitted;DNS.' + $i++ +  " = $_" }) -join [System.Environment]::NewLine)
+"@
+  }
+
+  Out-File -FilePath $IncludeDir\sub_ca_ext.conf -InputObject $subCaExt
+
+  wsl --exec "$WSLScriptRoot/CA/create_sub.sh" `
+    --home $ca.Home `
+    --home-root (Join-Path $CaRootDir root_ca | ConvertTo-WSLPath) `
+    --name $Name
+}
+
+function Get-SuboridinateCAName() {
+  Get-ChildItem $CaSubDir -Name
+}
+
+function New-Certificate() {
+  [CmdletBinding()]
+  param(
+    [Parameter(Mandatory)]
+    [string] $Issuer,
+    [Parameter(Mandatory)]
+    [string] $Request,
+    [ValidateSet('server', 'client')]
+    [string] $Type = 'server',
+    [string] $Name = 'tls',
+    [string] $Destination = $(Resolve-Path .)
+  )
+
+  if (-not (Test-CA $Issuer)) {
+    Write-Error "Subordinate CA '$Issuer' does not exist!"
+    return
+  }
+
+  if (-not (Test-Path $Request)) {
+    Write-Error "Request file '$Request' does not exist!"
+    return
+  }
 
   if (-not (Test-Path $Destination)) {
     New-Item $Destination -ItemType Directory 1> $null
   }
 
   wsl --exec "$WSLScriptRoot/CA/new_cert.sh" `
-    --home $CaHomeWsl `
+    --home (Join-Path $CaSubDir $Issuer | ConvertTo-WSLPath) `
+    --home-root (Join-Path $CaRootDir root_ca | ConvertTo-WSLPath) `
+    --request (ConvertTo-WSLPath -Path $Request) `
     --destination (ConvertTo-WSLPath -Path $Destination) `
     --name $Name `
-    --type server `
-    --request-config (ConvertTo-WSLPath -Path $RequestConfig)
+    --type $Type
+
+  Remove-Item $Destination\$Name.csr -ErrorAction Ignore
 }
 
-function Import-DevOpToolsRootCA() {
+function Install-RootCA() {
   $certPath = Join-Path $CaHome root_ca.crt
   $result = Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\Root
   $result[0].FriendlyName = 'DevOpTools Development Root CA'
@@ -115,4 +157,41 @@ function Remove-DevOpToolsCertificates() {
   }
 
   Remove-Item -Recurse -Force $CaHome
+}
+
+function Test-CA() {
+  param(
+    [Parameter(Mandatory)]
+    [string]$Name,
+    [switch]$Root
+  )
+
+  return [bool](Test-Path (Join-Path ($Root ? $CaRootDir : $CaSubDir) $Name ca.pfx))
+}
+
+function Initialize-CA() {
+  param(
+    [Parameter(Mandatory)]
+    [string]$Name,
+    [switch]$Root
+  )
+
+  $caHome = Join-Path ($Root ? $CaRootDir : $CaSubDir) $Name
+  $caHomeWsl = ConvertTo-WSLPath $caHome
+
+  Write-Verbose "Initializing CA '$Name' at '$caHome'"
+
+  Remove-Item -Recurse -Force $caHome -ErrorAction Ignore
+
+  $certs = Join-Path $caHome certs
+  $db = Join-Path $caHome db
+  $private = Join-Path $caHome private
+  New-Item $certs, $db, $private -ItemType Directory 1> $null
+
+  $dbIndex = Join-Path $db index
+  New-Item $dbIndex -ItemType File 1> $null
+
+  return [PSCustomObject]@{
+    Home = $caHomeWsl
+  }
 }

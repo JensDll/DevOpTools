@@ -16,7 +16,7 @@ function New-RootCA() {
 
   $ca = Initialize-CA -Root root_ca
 
-  wsl --exec "$WSLScriptRoot/CA/create_root.sh" --home $ca.Home
+  bash "$WSLScriptRoot/CA/create_root.sh" --home $ca.Home
 }
 
 function New-SubordinateCA() {
@@ -56,7 +56,7 @@ $(($PermittedDNS | ForEach-Object { 'permitted;DNS.' + $i++ +  " = $_" }) -join 
 
   Out-File -FilePath $IncludeDir\sub_ca_ext.conf -InputObject $subCaExt
 
-  wsl --exec "$WSLScriptRoot/CA/create_sub.sh" `
+  bash "$WSLScriptRoot/CA/create_sub.sh" `
     --home $ca.Home `
     --home-root (Join-Path $CaRootDir root_ca | ConvertTo-WSLPath) `
     --name $Name
@@ -93,7 +93,7 @@ function New-Certificate() {
     New-Item $Destination -ItemType Directory 1> $null
   }
 
-  wsl --exec "$WSLScriptRoot/CA/new_cert.sh" `
+  bash "$WSLScriptRoot/CA/new_cert.sh" `
     --home (Join-Path $CaSubDir $Issuer | ConvertTo-WSLPath) `
     --home-root (Join-Path $CaRootDir root_ca | ConvertTo-WSLPath) `
     --request (ConvertTo-WSLPath -Path $Request) `

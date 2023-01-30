@@ -17,6 +17,7 @@ $config = New-PesterConfiguration
 $config.Run.Container = $(
   (New-PesterContainer -Path .\tests\AWSCredentials.Tests.ps1),
   (New-PesterContainer -Path .\tests\DNS.Tests.ps1),
+  (New-PesterContainer -Path .\tests\TLS.Tests.ps1),
   (New-PesterContainer -Path .\tests\Admin.Tests.ps1 -Data @{ IsAdmin = $AsAdmin })
 )
 

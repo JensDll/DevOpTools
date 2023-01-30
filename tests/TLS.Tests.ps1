@@ -12,4 +12,8 @@ Describe 'Integration' {
     New-Certificate -Issuer sub_ca2 -Request $PSScriptRoot\__fixtures__\cert.conf `
       -Name sub_ca2 -Destination $PSScriptRoot\TLS
   }
+
+  AfterEach {
+    Remove-Item $PSScriptRoot\TLS -Recurse -Force
+  }
 }

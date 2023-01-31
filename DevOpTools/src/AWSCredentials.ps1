@@ -108,7 +108,7 @@ function Test-AWSCredentials {
     [string]$UserName
   )
 
-  return [bool] (git config --get --file "$CredentialsFilePath" "$UserName.accessKey")
+  return [bool] (git config --get --file $CredentialsFilePath "$UserName.accessKey")
 }
 
 function Remove-IAMCredentials {

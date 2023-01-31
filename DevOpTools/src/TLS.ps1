@@ -177,20 +177,8 @@ function Install-Certificate() {
     [string]$FriendlyName
   )
 
-  $storeLocation = [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
-
-  $store = [System.Security.Cryptography.X509Certificates.X509Store]::new($StoreName, $storeLocation)
-  if (-not $?) {
-    Write-Error "Failed to access the $storeLocation\$StoreName certificate store!"
-    return
-  }
-
-  $openFlag = [System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite
-  $store.open($openFlag)
-  if (-not $?) {
-    Write-Error "Failed to open the $storeLocation\$StoreName certificate store with $openFlag privileges!"
-    return
-  }
+  $store = Open-X509Store -StoreName $StoreName `
+    -OpenFlags ([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
 
   try {
     $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($Path)
@@ -211,20 +199,7 @@ function Uninstall-Certificate() {
     [string]$StoreName
   )
 
-  $storeLocation = [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
-
-  $store = [System.Security.Cryptography.X509Certificates.X509Store]::new($StoreName, $storeLocation)
-  if (-not $?) {
-    Write-Error "Failed to access the $storeLocation\$StoreName certificate store!"
-    return
-  }
-
-  $openFlag = [System.Security.Cryptography.X509Certificates.OpenFlags]::MaxAllowed
-  $store.open($openFlag)
-  if (-not $?) {
-    Write-Error "Failed to open the $storeLocation\$StoreName certificate store with $openFlag privileges!"
-    return
-  }
+  $store = Open-X509Store -StoreName $StoreName
 
   try {
     $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($Path)
@@ -232,6 +207,30 @@ function Uninstall-Certificate() {
   } finally {
     $store.Close()
   }
+}
+
+function Open-X509Store() {
+  [OutputType([System.Security.Cryptography.X509Certificates.X509Store])]
+  param(
+    [Parameter(Mandatory)]
+    [string]$StoreName,
+    [System.Security.Cryptography.X509Certificates.StoreLocation]$StoreLocation
+    = [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser,
+    [System.Security.Cryptography.X509Certificates.OpenFlags]$OpenFlags
+    = [System.Security.Cryptography.X509Certificates.OpenFlags]::MaxAllowed
+  )
+
+  $store = [System.Security.Cryptography.X509Certificates.X509Store]::new($StoreName, $StoreLocation)
+  if (-not $?) {
+    throw "Failed to access the $StoreLocation\$StoreName certificate store!"
+  }
+
+  $store.open($OpenFlags)
+  if (-not $?) {
+    throw "Failed to open the $StoreLocation\$StoreName certificate store with $OpenFlags privileges!"
+  }
+
+  return $store;
 }
 
 function Test-CA() {

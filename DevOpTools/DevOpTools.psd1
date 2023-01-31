@@ -34,7 +34,7 @@
   )
   CmdletsToExport   = @()
   AliasesToExport   = @()
-  VariablesToExport = $()
+  VariablesToExport = @()
   FileList          = @()
   PrivateData       = @{
     PSData = @{

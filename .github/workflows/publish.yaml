@@ -15,10 +15,7 @@ jobs:
     steps:
       - name: Checking out the repository
         uses: actions/checkout@v3
-      - name: Preparing publish folder
-        shell: pwsh
-        working-directory: ./scripts
-        run: ./build.ps1
       - name: Publishing to PowerShell Gallery
         shell: pwsh
-        run: Publish-Module -Path ./publish/DevOpTools -NugetAPIKey '${{ secrets.PUBLISH_KEY }}' -Verbose
+        working-directory: ./scripts
+        run: ./publish.ps1 -NugetAPIKey '${{ secrets.PUBLISH_KEY }}' -Verbose

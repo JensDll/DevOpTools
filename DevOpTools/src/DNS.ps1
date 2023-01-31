@@ -1,46 +1,32 @@
 ﻿$HostFilePath = 'C:\Windows\System32\drivers\etc\hosts'
 
-<#
-.DESCRIPTION
-Add new host entries to the system's hosts file.
-
-.PARAMETER IPAddress
-The IP address to resolve.
-
-.PARAMETER Domain
-The domain for which to resolve the IP address.
-
-.PARAMETER Subdomains
-Any number of subdomains.
-#>
-function Add-DNSEntries() {
+function Add-DNSEntry() {
   [CmdletBinding()]
   param(
-    [Parameter(Mandatory, Position = 0)]
+    [Parameter(Mandatory)]
     [string]$IPAddress,
-    [Parameter(Mandatory, Position = 1)]
+    [Parameter(Mandatory)]
     [string]$Domain,
-    [Parameter(Position = 2)]
-    [string[]]$Subdomains
+    [string[]]$Subdomain
   )
 
   $PSBoundParameters.Remove('SubDomains') > $null
 
-  Invoke-Privileged -Function 'Add-DNSEntries' @PSBoundParameters `
-  ( $Subdomains ? "-SubDomains $($Subdomains -join ',')" : '')
+  Invoke-Privileged -Function 'Add-DNSEntry' @PSBoundParameters `
+  ( $Subdomain ? "-SubDomains $($Subdomain -join ',')" : '')
 
   if (-not (Test-Admin)) {
     return
   }
 
-  Remove-DNSEntries -Domain $Domain
+  Remove-DNSEntry -Domain $Domain
 
   Write-Verbose "Writing DNS entries to '$HostFilePath'"
 
   $hasNewlime = (Get-Content $HostFilePath -Raw) -Match [System.Environment]::NewLine + '$'
   $entries = ($hasNewlime ? '' : [System.Environment]::NewLine) + "$IPAddress $Domain # Added by PowerShell DevOpTools"
 
-  foreach ($subdomain in $Subdomains) {
+  foreach ($subdomain in $Subdomain) {
     $entries += [System.Environment]::NewLine + "$IPAddress $subdomain.$Domain # Added by PowerShell DevOpTools"
   }
 
@@ -54,21 +40,14 @@ function Add-DNSEntries() {
   }
 }
 
-<#
-.DESCRIPTION
-Remove previously added host entries from the system's hosts file.
-
-.PARAMETER Domain
-Remove entries for this domain. But only if Add-DNSEntries previously added them.
-#>
-function Remove-DNSEntries() {
+function Remove-DNSEntry() {
   [CmdletBinding()]
   param(
-    [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [Parameter(Mandatory)]
     [string]$Domain
   )
 
-  Invoke-Privileged -Function 'Remove-DNSEntries' @PSBoundParameters
+  Invoke-Privileged -Function 'Remove-DNSEntry' @PSBoundParameters
 
   if (-not (Test-Admin)) {
     return

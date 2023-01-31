@@ -1,125 +1,108 @@
 ﻿$CredentialsFilePath = Join-Path $env:DEVOPTOOLS_HOME aws_credentials
 
-<#
-.DESCRIPTION
-Create new AWS credentials for the specified user and store them to the file system.
-
-.PARAMETER UserName
-The user name to create the credentials for.
-
-.PARAMETER Recreate
-Delete the existing credentials if they exist and recreate them.
-#>
-function New-AWSCredentials {
+function New-AWSCredential {
   [CmdletBinding()]
   param(
-    [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-    [string]$UserName,
+    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [string]$Username,
     [switch]$Recreate
   )
 
-  if (-not (Test-Path $CredentialsFilePath)) {
-    Write-Verbose "Creating new AWS credentials file at '$CredentialsFilePath'"
-    New-Item $CredentialsFilePath -Force -ItemType File 1> $null
+  begin {
+    if (-not (Test-Path $CredentialsFilePath)) {
+      Write-Verbose "Creating new AWS credentials file at '$CredentialsFilePath'"
+      New-Item $CredentialsFilePath -Force -ItemType File 1> $null
+    }
   }
 
-  if ($Recreate) {
-    Write-Verbose "Recreating AWS credentials for user '$UserName'"
-    Remove-IAMCredentials $UserName
-  } else {
-    if (Test-AwsCredentials $UserName) {
-      Write-Error "User '$UserName' already has cached credentials. Pass -Recreate to recreate them"
-      Get-Help New-AWSCredentials -Parameter Recreate
+  process {
+    if ($Recreate) {
+      Write-Verbose "Recreating AWS credentials for user '$Username'"
+      Remove-IAMCredential $Username
+    } else {
+      if (Test-AwsCredential $Username) {
+        Write-Error "User '$Username' already has cached credentials. Pass -Recreate to recreate them"
+        Get-Help New-AWSCredential -Parameter Recreate
+        throw
+      }
+
+      Write-Verbose "Creating new AWS credentials for user '$Username'"
+    }
+
+    Write-AWSCredential $Username
+  }
+}
+
+function Read-AWSCredential {
+  [CmdletBinding()]
+  param(
+    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [string]$Username
+  )
+
+  process {
+    if (-not (Test-AWSCredential $Username)) {
+      Write-Error "Crendentials not found for user '$Username'"
       throw
     }
 
-    Write-Verbose "Creating new AWS credentials for user '$UserName'"
-  }
+    $accessKey = git config --file $CredentialsFilePath --get "$Username.accessKey"
+    $secretKey = git config --file $CredentialsFilePath --get "$Username.secretKey"
 
-  Write-AWSCredentials $UserName
+    return @{
+      AccessKey = $accessKey
+      SecretKey = $secretKey
+    }
+  }
 }
 
-<#
-.DESCRIPTION
-Read AWS credentials for the specified user.
-
-.PARAMETER UserName
-The user name to read the credentials for.
-#>
-function Read-AWSCredentials {
+function Remove-AWSCredential {
   [CmdletBinding()]
   param(
-    [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-    [string]$UserName
+    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [string]$Username
   )
 
-  if (-not (Test-AWSCredentials $UserName)) {
-    Write-Error "Crendentials not found for user '$UserName'"
-    throw
-  }
+  process {
+    Write-Verbose "Removing AWS credentials for user '$Username'"
 
-  $accessKey = git config --file $CredentialsFilePath --get "$UserName.accessKey"
-  $secretKey = git config --file $CredentialsFilePath --get "$UserName.secretKey"
+    Remove-IAMCredential $Username
 
-  return @{
-    AccessKey = $accessKey
-    SecretKey = $secretKey
+    git config --file $CredentialsFilePath --remove-section $Username
   }
 }
 
-<#
-.DESCRIPTION
-Remove AWS credentials for the specified user. It will remove them both
-locally and from the IAM user.
-
-.PARAMETER UserName
-The user name to remove the credentials for.
-#>
-function Remove-AWSCredentials {
-  [CmdletBinding()]
+function Write-AWSCredential {
   param(
-    [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-    [string]$UserName
+    [Parameter(Mandatory)]
+    [string]$Username
   )
 
-  Write-Verbose "Removing AWS credentials for user '$UserName'"
+  $credentials = (aws iam create-access-key --user-name $Username --query 'AccessKey.[AccessKeyId, SecretAccessKey]' --output text) -split '\s+'
 
-  Remove-IAMCredentials $UserName
-
-  git config --file $CredentialsFilePath --remove-section $UserName
+  git config --file $CredentialsFilePath "$Username.accessKey" $credentials[0]
+  git config --file $CredentialsFilePath "$Username.secretKey" $credentials[1]
 }
 
-function Write-AWSCredentials {
-  param(
-    [Parameter(Mandatory, Position = 0)]
-    [string]$UserName
-  )
-
-  $credentials = (aws iam create-access-key --user-name $UserName --query 'AccessKey.[AccessKeyId, SecretAccessKey]' --output text) -split '\s+'
-
-  git config --file $CredentialsFilePath "$UserName.accessKey" $credentials[0]
-  git config --file $CredentialsFilePath "$UserName.secretKey" $credentials[1]
-}
-
-function Test-AWSCredentials {
+function Test-AWSCredential {
   [OutputType([bool])]
   param(
-    [Parameter(Mandatory, Position = 0)]
-    [string]$UserName
+    [Parameter(Mandatory)]
+    [string]$Username
   )
 
-  return [bool] (git config --get --file $CredentialsFilePath "$UserName.accessKey")
+  return [bool] (git config --get --file $CredentialsFilePath "$Username.accessKey")
 }
 
-function Remove-IAMCredentials {
+function Remove-IAMCredential {
   param(
-    [Parameter(Mandatory, Position = 0)]
-    [string]$UserName
+    [Parameter(Mandatory)]
+    [string]$Username
   )
 
-  $accessKeys = (aws iam list-access-keys --user-name $UserName --query 'AccessKeyMetadata[].AccessKeyId' --output text) -split '\s+'
+  $accessKeys = (aws iam list-access-keys --user-name $Username --query 'AccessKeyMetadata[].AccessKeyId' --output text) -split '\s+'
 
   foreach ($accesKey in $accessKeys) {
-    aws iam delete-access-key --access-key-id $accesKey --user-name $UserName
+    aws iam delete-access-key --access-key-id $accesKey --user-name $Username
   }
 }

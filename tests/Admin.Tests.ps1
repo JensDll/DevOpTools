@@ -1,6 +1,7 @@
-﻿param (
+﻿[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'IsAdmin')]
+param (
   [Parameter(Mandatory)]
-  [bool] $IsAdmin
+  [bool]$IsAdmin
 )
 
 BeforeAll {

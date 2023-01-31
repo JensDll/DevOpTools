@@ -1,4 +1,4 @@
-@{
+﻿@{
   RootModule        = 'DevOpTools.psm1'
   ModuleVersion     = '0.0.9'
   GUID              = '0d0e7a69-7247-4979-a599-73850459367e'
@@ -9,9 +9,9 @@
   ScriptsToProcess  = @('scripts\init.ps1')
   FunctionsToExport = @(
     # AWS
-    'New-AWSCredentials',
-    'Read-AWSCredentials',
-    'Remove-AWSCredentials',
+    'New-AWSCredential',
+    'Read-AWSCredential',
+    'Remove-AWSCredential',
     # Admin
     'Test-Admin',
     'Invoke-Privileged',
@@ -23,8 +23,8 @@
     'Install-RootCA',
     'Uninstall-RootCA',
     # DNS
-    'Add-DNSEntries',
-    'Remove-DNSEntries',
+    'Add-DNSEntry',
+    'Remove-DNSEntry',
     # WSL
     'ConvertTo-WSLPath'
   )

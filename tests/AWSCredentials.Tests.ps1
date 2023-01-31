@@ -26,7 +26,7 @@ Describe 'AWSCredentials' {
     Mock Write-Error {} -ModuleName DevOpTools
   }
 
-  Describe 'Read-AWSCredentials' {
+  Describe 'Read-AWSCredential' {
     BeforeEach {
       # Arrange
       @'
@@ -38,7 +38,7 @@ Describe 'AWSCredentials' {
 
     It 'Reads the credentials' {
       # Act
-      $credentials = Read-AWSCredentials -UserName 'TestUser'
+      $credentials = Read-AWSCredential -Username 'TestUser'
 
       # Assert
       $credentials.AccessKey | Should -Be 'access-key'
@@ -47,12 +47,12 @@ Describe 'AWSCredentials' {
 
     It "Fails if the user doesn't exist" {
       # Act + Assert
-      { Read-AWSCredentials -UserName 'Invalid' } | Should -Throw
+      { Read-AWSCredential -Username 'Invalid' } | Should -Throw
       Should -Invoke -CommandName Write-Error -ModuleName DevOpTools -Exactly -Times 1
     }
   }
 
-  Describe 'New-AWSCredentials' {
+  Describe 'New-AWSCredential' {
     Describe 'With existing credentials file (<exists>)' -ForEach @(
       @{ exists = $true }
       @{ exists = $false }
@@ -68,8 +68,8 @@ Describe 'AWSCredentials' {
           }
 
           # Act
-          New-AWSCredentials -UserName 'TestUser' -Recreate:$withRecreate
-          $credentials = Read-AWSCredentials -UserName 'TestUser'
+          New-AWSCredential -Username 'TestUser' -Recreate:$withRecreate
+          $script:credentials = Read-AWSCredential -Username 'TestUser'
         }
 
         # Assert
@@ -95,7 +95,7 @@ Describe 'AWSCredentials' {
         }
 
         It -Skip:$withRecreate 'Fails if credentials already exist' {
-          { New-AWSCredentials -UserName 'TestUser' } | Should -Throw
+          { New-AWSCredential -Username 'TestUser' } | Should -Throw
           Should -Invoke -CommandName Write-Error -ModuleName DevOpTools -Exactly -Times 1
         }
       }

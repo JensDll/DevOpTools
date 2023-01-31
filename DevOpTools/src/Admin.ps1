@@ -1,19 +1,19 @@
 <#
 .DESCRIPTION
-Test if the current user has admin privileges.
+Tests if the current user has admin privileges.
 #>
 function Test-Admin() {
   if ($IsWindows) {
     $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
   }
-  
+
   return 0 -eq (id -u)
 }
 
 <#
 .DESCRIPTION
-Invoke the current script or specified function with elevated privileges.
+Invokes the current script or specified function with elevated privileges.
 
 .PARAMETER Function
 The function name to invoke.
@@ -36,10 +36,10 @@ function Invoke-Privileged() {
   if ((Test-Admin) -or -not $IsWindows) {
     return
   }
-  
+
   $isVerbose = $PSBoundParameters['Verbose'] -eq $true
   $isDebug = $PSBoundParameters['Debug'] -eq $true
-  
+
   $PSBoundParameters.Remove('Function') 1> $null
   $PSBoundParameters.Remove('NoExit') 1> $null
   $PSBoundParameters.Remove('Verbose') 1> $null

@@ -1,5 +1,5 @@
 ﻿BeforeAll {
-  Import-Module $PSScriptRoot\..\DevOpTools -Force
+  . "$PSScriptRoot\__fixtures__\import.ps1"
 }
 
 Describe 'ConvertTo-WSLPath' {

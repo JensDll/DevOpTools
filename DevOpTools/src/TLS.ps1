@@ -1,7 +1,7 @@
-﻿. $PSScriptRoot\WSL.ps1
+﻿# . $PSScriptRoot\WSL.ps1
 
-$CaRootDir = Join-Path $env:DEVOPTOOLS_HOME ca root
-$CaSubDir = Join-Path $env:DEVOPTOOLS_HOME ca sub
+$CaRootDir = Join-Path -Path $env:DEVOPTOOLS_HOME ca root
+$CaSubDir = Join-Path -Path $env:DEVOPTOOLS_HOME ca sub
 
 function New-RootCA() {
   [CmdletBinding()]
@@ -23,7 +23,7 @@ function New-SubordinateCA() {
   param(
     [Parameter(Mandatory)]
     [string] $Name,
-    [string[]] $PermittedDNS = @()
+    [string[]] $PermittedDNS
   )
 
   if (-not (Test-CA -Root $CaRootDir -Name root_ca)) {
@@ -111,12 +111,12 @@ function New-Certificate() {
 }
 
 function Install-RootCA() {
-  $certPath = Join-Path $CaRootDir root_ca ca.crt
+  $certPath = Join-Path -Path $CaRootDir root_ca ca.crt
   Install-Certificate -Path $certPath -StoreName Root -FriendlyName 'DevOpTools Development Root CA'
 }
 
 function Uninstall-RootCA() {
-  $certPath = Join-Path $CaRootDir root_ca ca.crt
+  $certPath = Join-Path -Path $CaRootDir root_ca ca.crt
   Uninstall-Certificate -Path $certPath -StoreName Root
 }
 
@@ -132,16 +132,16 @@ function Install-Certificate() {
 
   $storeLocation = [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
 
-  $store = [System.Security.Cryptography.X509Certificates.X509Store]::new($storeName, $storeLocation)
+  $store = [System.Security.Cryptography.X509Certificates.X509Store]::new($StoreName, $storeLocation)
   if (-not $?) {
-    Write-Error "Failed to access the $storeLocation\$storeName certificate store!"
+    Write-Error "Failed to access the $storeLocation\$StoreName certificate store!"
     return
   }
 
   $openFlag = [System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite
   $store.open($openFlag)
   if (-not $?) {
-    Write-Error "Failed to open the $storeLocation\$storeName certificate store with $openFlag privileges!"
+    Write-Error "Failed to open the $storeLocation\$StoreName certificate store with $openFlag privileges!"
     return
   }
 
@@ -166,16 +166,16 @@ function Uninstall-Certificate() {
 
   $storeLocation = [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
 
-  $store = [System.Security.Cryptography.X509Certificates.X509Store]::new($storeName, $storeLocation)
+  $store = [System.Security.Cryptography.X509Certificates.X509Store]::new($StoreName, $storeLocation)
   if (-not $?) {
-    Write-Error "Failed to access the $storeLocation\$storeName certificate store!"
+    Write-Error "Failed to access the $storeLocation\$StoreName certificate store!"
     return
   }
 
   $openFlag = [System.Security.Cryptography.X509Certificates.OpenFlags]::MaxAllowed
   $store.open($openFlag)
   if (-not $?) {
-    Write-Error "Failed to open the $storeLocation\$storeName certificate store with $openFlag privileges!"
+    Write-Error "Failed to open the $storeLocation\$StoreName certificate store with $openFlag privileges!"
     return
   }
 
@@ -196,7 +196,7 @@ function Test-CA() {
     [string]$Name
   )
 
-  return [bool](Test-Path (Join-Path $Root $Name ca.pfx))
+  return [bool](Test-Path (Join-Path -Path $Root $Name ca.pfx))
 }
 
 function Initialize-CA() {

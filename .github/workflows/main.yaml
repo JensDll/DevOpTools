@@ -13,9 +13,17 @@ jobs:
   test:
     uses: ./.github/workflows/test.yaml
 
+  analysis:
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/analysis.yaml
+
   publish:
     if: github.event_name == 'release' && github.event.action == 'published'
     needs:
       - test
+      - analysis
     uses: ./.github/workflows/publish.yaml
     secrets: inherit

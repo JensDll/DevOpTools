@@ -1,27 +1,25 @@
 ﻿param(
-  [switch]$AsAdmin
+  [switch]$Installed
 )
 
-Import-Module $PSScriptRoot\..\DevOpTools -Force -Function 'Invoke-Privileged', 'Test-Admin'
+Remove-Module -Name DevOpTools -ErrorAction SilentlyContinue
 
-If ($AsAdmin -and $IsWindows) {
-  Invoke-Privileged -NoExit -AsAdmin
-
-  If (-not (Test-Admin)) {
-    return
-  }
+if ($Installed) {
+  $script:DEVOPTOOLS_TEST_INSTALLED = $true
+} else {
+  $script:DEVOPTOOLS_TEST_INSTALLED = $false
 }
 
 $config = New-PesterConfiguration
 
-$testDir = Join-Path $PSScriptRoot .. tests
+$testDir = Join-Path -Path $PSScriptRoot .. tests
 
 $config.Run.Container = $(
-  (New-PesterContainer -Path $testDir\AWSCredentials.Tests.ps1)
+  (New-PesterContainer -Path $testDir\AWSCredentials.Tests.ps1),
   (New-PesterContainer -Path $testDir\DNS.Tests.ps1),
   (New-PesterContainer -Path $testDir\TLS.Tests.ps1),
-  (New-PesterContainer -Path $testDir\WSL.Tests.ps1),
-  (New-PesterContainer -Path $testDir\Admin.Tests.ps1 -Data @{ IsAdmin = $AsAdmin })
+  (New-PesterContainer -Path $testDir\WSL.Tests.ps1)
+  (New-PesterContainer -Path $testDir\Admin.Tests.ps1 -Data @{ IsAdmin = $false })
 )
 
 if ($Env:CI -eq 'true') {

@@ -6,10 +6,10 @@ param(
   [switch]$Local
 )
 
-$rootDir = Join-Path $PSScriptRoot ..
+$rootDir = Join-Path -Path $PSScriptRoot ..
 
-$srcDir = Join-Path $rootDir DevOpTools
-$publishDir = Join-Path $rootDir publish DevOpTools
+$srcDir = Join-Path -Path $rootDir DevOpTools
+$publishDir = Join-Path -Path $rootDir publish DevOpTools
 
 $whatIf = $WhatIfPreference
 $confirm = $ConfirmPreference
@@ -24,7 +24,7 @@ Get-ChildItem $publishDir -Directory | Where-Object { $_.Name -like '.*' } | Rem
 $WhatIfPreference = $whatIf
 $ConfirmPreference = $confirm
 
-Test-ModuleManifest -Path (Join-Path $publishDir DevOpTools.psd1)
+Test-ModuleManifest -Path (Join-Path -Path $publishDir DevOpTools.psd1)
 
 if ($Local) {
   $PSBoundParameters.Remove('Local') 1> $null

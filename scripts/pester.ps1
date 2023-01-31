@@ -17,7 +17,7 @@ $config = New-PesterConfiguration
 $testDir = Join-Path $PSScriptRoot .. tests
 
 $config.Run.Container = $(
-  (New-PesterContainer -Path $testDir\AWSCredentials.Tests.ps1),
+  (New-PesterContainer -Path $testDir\AWSCredentials.Tests.ps1)
   (New-PesterContainer -Path $testDir\DNS.Tests.ps1),
   (New-PesterContainer -Path $testDir\TLS.Tests.ps1),
   (New-PesterContainer -Path $testDir\Admin.Tests.ps1 -Data @{ IsAdmin = $AsAdmin })

@@ -4,13 +4,13 @@
 
 Describe 'AWSCredentials' {
   BeforeEach {
-    $credentialsFilePath = "$([IO.Path]::GetTempPath())$([Guid]::NewGuid())-aws-credentials"
+    $credentialsFile = "$TestDrive\credentials"
 
     InModuleScope DevopTools {
       $script:CredentialsFilePath = $args[0]
-    } -ArgumentList $credentialsFilePath
+    } -ArgumentList $credentialsFile
 
-    New-Item $credentialsFilePath -Force -ItemType File
+    New-Item $credentialsFile -Force -ItemType File
 
     Mock aws {
       switch ($args[0] + " " + $args[1]) {
@@ -33,7 +33,7 @@ Describe 'AWSCredentials' {
 [TestUser]
   accessKey = access-key
   secretKey = secret-key
-'@ | Out-File $credentialsFilePath
+'@ | Out-File $credentialsFile
     }
 
     It 'should read the credentials' {
@@ -64,7 +64,7 @@ Describe 'AWSCredentials' {
         BeforeEach {
           # Arrange
           if (-not $exists) {
-            Remove-Item $credentialsFilePath
+            Remove-Item $credentialsFile
           }
 
           # Act
@@ -81,7 +81,7 @@ Describe 'AWSCredentials' {
         }
 
         It 'credentials file exists' {
-          $credentialsFilePath | Should -Exist
+          $credentialsFile | Should -Exist
         }
 
         it 'call aws iam create-access-key' {
@@ -99,10 +99,6 @@ Describe 'AWSCredentials' {
           Should -Invoke -CommandName Write-Error -ModuleName DevopTools -Exactly -Times 1
         }
       }
-    }
-
-    AfterEach {
-      Remove-Item $credentialsFilePath
     }
   }
 }

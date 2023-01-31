@@ -14,11 +14,13 @@ If ($AsAdmin -and $IsWindows) {
 
 $config = New-PesterConfiguration
 
+$testDir = Join-Path $PSScriptRoot .. tests
+
 $config.Run.Container = $(
-  (New-PesterContainer -Path $PSScriptRoot\..\tests\AWSCredentials.Tests.ps1),
-  (New-PesterContainer -Path .\tests\DNS.Tests.ps1),
-  (New-PesterContainer -Path .\tests\TLS.Tests.ps1),
-  (New-PesterContainer -Path .\tests\Admin.Tests.ps1 -Data @{ IsAdmin = $AsAdmin })
+  (New-PesterContainer -Path $testDir\AWSCredentials.Tests.ps1),
+  (New-PesterContainer -Path $testDir\DNS.Tests.ps1),
+  (New-PesterContainer -Path $testDir\TLS.Tests.ps1),
+  (New-PesterContainer -Path $testDir\Admin.Tests.ps1 -Data @{ IsAdmin = $AsAdmin })
 )
 
 if ($Env:CI -eq 'true') {

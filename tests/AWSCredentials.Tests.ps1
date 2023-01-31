@@ -4,11 +4,11 @@
 
 Describe 'AWSCredentials' {
   BeforeEach {
+    $credentialsFile = "$TestDrive\credentials"
+
     InModuleScope DevopTools {
       $script:CredentialsFilePath = $args[0]
-    } -ArgumentList "$TestDrive\credentials"
-
-    $credentialsFile = "TestDrive:\credentials"
+    } -ArgumentList $credentialsFile
 
     New-Item $credentialsFile -Force -ItemType File
 

@@ -1,5 +1,6 @@
 logs/
 debug/
 .data/
+publish/
 
 *.log

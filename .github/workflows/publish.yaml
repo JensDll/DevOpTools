@@ -17,4 +17,5 @@ jobs:
         uses: actions/checkout@v3
       - name: Publishing to PowerShell Gallery
         shell: pwsh
-        run: Publish-Module -Path DevOpTools -NugetAPIKey '${{ secrets.PUBLISH_KEY }}' -Verbose
+        working-directory: ./scripts
+        run: ./publish.ps1 -NugetAPIKey '${{ secrets.PUBLISH_KEY }}' -Verbose

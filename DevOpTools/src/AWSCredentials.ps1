@@ -1,6 +1,4 @@
-﻿. $PSScriptRoot\Env.ps1
-
-$CredentialsFilePath = Join-Path $DevOpToolsHome aws-credentials
+﻿$CredentialsFilePath = Join-Path $env:DEVOPTOOLS_HOME aws_credentials
 
 <#
 .DESCRIPTION

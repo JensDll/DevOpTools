@@ -8,7 +8,7 @@ The Windows path to convert.
 function ConvertTo-WSLPath {
   [CmdletBinding()]
   param(
-    [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [string]$Path
   )
 

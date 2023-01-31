@@ -18,6 +18,7 @@ $WhatIfPreference = $ConfirmPreference = $false
 
 Remove-Item -Path $publishDir -Recurse -ErrorAction SilentlyContinue
 Copy-Item -Path $srcDir -Destination $publishDir -Recurse
+Copy-Item -Path "$rootDir\LICENSE.txt", "$rootDir\README.md" -Destination $publishDir
 Get-ChildItem $publishDir -Directory | Where-Object { $_.Name -like '.*' } | Remove-Item -Recurse
 
 $WhatIfPreference = $whatIf

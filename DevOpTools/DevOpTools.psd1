@@ -12,11 +12,9 @@
     'New-AWSCredentials',
     'Read-AWSCredentials',
     'Remove-AWSCredentials',
-
     # Admin
     'Test-Admin',
     'Invoke-Privileged',
-
     # TLS
     'New-RootCA',
     'New-SubordinateCA',
@@ -24,11 +22,9 @@
     'New-Certificate',
     'Install-RootCA',
     'Uninstall-RootCA',
-
     # DNS
     'Add-DNSEntries',
     'Remove-DNSEntries',
-
     # WSL
     'ConvertTo-WSLPath'
   )
@@ -38,9 +34,9 @@
   FileList          = @()
   PrivateData       = @{
     PSData = @{
-      Tags       = @('powershell', 'devops', 'Windows')
-      LicenseUri = 'https://github.com/JensDll/DevOpTools/blob/main/LICENSE'
+      Tags       = @('DevOps', 'AWS', 'Windows', 'Linux')
       ProjectUri = 'https://github.com/JensDll/DevOpTools'
+      LicenseUri = 'https://github.com/JensDll/DevOpTools/blob/main/LICENSE.txt'
     }
   }
 }

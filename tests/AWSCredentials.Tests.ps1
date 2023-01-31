@@ -36,7 +36,7 @@ Describe 'AWSCredentials' {
 '@ | Out-File $credentialsFilePath
     }
 
-    It 'should read the credentials' {
+    It 'Reads the credentials' {
       # Act
       $credentials = Read-AWSCredentials -UserName 'TestUser'
 
@@ -45,7 +45,7 @@ Describe 'AWSCredentials' {
       $credentials.SecretKey | Should -Be 'secret-key'
     }
 
-    It 'fail if user does not exist' {
+    It "Fails if the user doesn't exist" {
       # Act + Assert
       { Read-AWSCredentials -UserName 'Invalid' } | Should -Throw
       Should -Invoke -CommandName Write-Error -ModuleName DevopTools -Exactly -Times 1
@@ -73,28 +73,28 @@ Describe 'AWSCredentials' {
         }
 
         # Assert
-        it -Skip:(-not $withRecreate) 'call iam delete-access-key' {
+        It -Skip:(-not $withRecreate) 'call iam delete-access-key' {
           Should -Invoke -CommandName 'aws' -ModuleName DevopTools -Exactly -Times 1 `
             -ParameterFilter { "$args" -match 'iam delete-access-key.+--access-key-id access-key-1' }
           Should -Invoke -CommandName 'aws' -ModuleName DevopTools -Exactly -Times 1 `
             -ParameterFilter { "$args" -match 'iam delete-access-key.+--access-key-id access-key-2' }
         }
 
-        It 'credentials file exists' {
+        It 'The credentials file exists' {
           $credentialsFilePath | Should -Exist
         }
 
-        it 'call aws iam create-access-key' {
+        It 'Calls aws iam create-access-key' {
           Should -Invoke -CommandName 'aws' -ModuleName DevopTools -Exactly -Times 1 `
             -ParameterFilter { "$args" -match 'iam create-access-key.+--user-name TestUser' }
         }
 
-        it 'create new credentials' {
+        It 'Created new credentials' {
           $credentials.AccessKey | Should -Be 'access-key'
           $credentials.SecretKey | Should -Be 'secret-key'
         }
 
-        it -Skip:$withRecreate 'fail if credentials already exist' {
+        It -Skip:$withRecreate 'Fails if credentials already exist' {
           { New-AWSCredentials -UserName 'TestUser' } | Should -Throw
           Should -Invoke -CommandName Write-Error -ModuleName DevopTools -Exactly -Times 1
         }

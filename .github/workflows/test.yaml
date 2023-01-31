@@ -12,4 +12,4 @@ jobs:
       - name: Running tests
         shell: pwsh
         working-directory: ./scripts
-        run: ./pester.ps1
+        run: ./test.ps1

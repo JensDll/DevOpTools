@@ -4,19 +4,18 @@ on:
   workflow_call:
 
 jobs:
-  pwsh-script-analyzer:
+  ps-script-analyzer:
     runs-on: ubuntu-22.04
     steps:
       - name: Checking out the repository
         uses: actions/checkout@v3
       - name: Running PSScriptAnalyzer
-        uses: microsoft/psscriptanalyzer-action@v1.0
+        uses: microsoft/psscriptanalyzer-action@v1.1
         with:
+          path: .\
           recurse: true
-          output: results.sarif
           settings: .\PSScriptAnalyzerSettings.psd1
-          includeDefaultRules: true
-          severity: '"Error", "Warning", "Information"'
+          output: results.sarif
       - name: Uploading SARIF results file
         uses: github/codeql-action/upload-sarif@v2
         with:

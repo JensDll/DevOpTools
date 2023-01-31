@@ -13,7 +13,7 @@ jobs:
   test:
     uses: ./.github/workflows/test.yaml
 
-  static-analysis:
+  analysis:
     permissions:
       actions: read
       contents: read

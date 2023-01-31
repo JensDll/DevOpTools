@@ -1,5 +1,18 @@
 ﻿$HostFilePath = 'C:\Windows\System32\drivers\etc\hosts'
 
+<#
+.DESCRIPTION
+Adds new domain entries to the system's hosts-file.
+
+.PARAMETER IPAddress
+The IP address for the domain.
+
+.PARAMETER Domain
+The domain for the IP address.
+
+.PARAMETER Subdomains
+A list of subdomains.
+#>
 function Add-DNSEntry() {
   [CmdletBinding()]
   param(
@@ -40,6 +53,13 @@ function Add-DNSEntry() {
   }
 }
 
+<#
+.DESCRIPTION
+Remove previously added domain entries from the system's hosts-file.
+
+.PARAMETER Domain
+The domain entries to remove. But only if Add-DNSEntry has added them previously.
+#>
 function Remove-DNSEntry() {
   [CmdletBinding()]
   param(

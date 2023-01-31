@@ -1,6 +1,6 @@
 ﻿<#
 .DESCRIPTION
-Convert a Windows path to an equivalent WSL mount path.
+Converts a Windows path to the equivalent WSL path.
 
 .PARAMETER Path
 The Windows path to convert.
@@ -23,6 +23,7 @@ function ConvertTo-WSLPath {
         return "/mnt/$($match.Groups[1].Value.ToLower())/"
       }
     )
+
     return $wslPath
   }
 }

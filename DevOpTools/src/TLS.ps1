@@ -1,14 +1,16 @@
-﻿# . $PSScriptRoot\WSL.ps1
-
-$CaRootDir = Join-Path -Path $env:DEVOPTOOLS_HOME ca root
+﻿$CaRootDir = Join-Path -Path $env:DEVOPTOOLS_HOME ca root
 $CaSubDir = Join-Path -Path $env:DEVOPTOOLS_HOME ca sub
 
+<#
+.DESCRIPTION
+Creates a new root certificate authority (CA) if it doesn't exist.
+#>
 function New-RootCA() {
   [CmdletBinding()]
   param()
 
   if (Test-CA -Root $CaRootDir -Name root_ca) {
-    Write-Warning 'Root CA already exists (skipping)'
+    Write-Verbose 'Root CA already exists (skipping)'
     return
   }
 
@@ -18,6 +20,19 @@ function New-RootCA() {
   bash $script --home $rootCa.Home
 }
 
+<#
+.DESCRIPTION
+Creates a new subordinate certificate authority (CA) from the root CA
+if one with the given name doesn't exist. If the root CA doesn't exist,
+New-SubordinateCA will implicitly create it.
+
+.PARAMETER Name
+The name of the subordinate CA to create.
+
+.PARAMETER PermittedDNS
+A list of DNS names that the subordinate CA is permitted to issue.
+They will be added to the X.509v3 name constraints extension.
+#>
 function New-SubordinateCA() {
   [CmdletBinding()]
   param(
@@ -27,12 +42,12 @@ function New-SubordinateCA() {
   )
 
   if (-not (Test-CA -Root $CaRootDir -Name root_ca)) {
-    Write-Warning 'Subordinate CA cannot be created without a root CA (creating)'
+    Write-Verbose 'Subordinate CA cannot be created without a root CA (creating)'
     New-RootCA
   }
 
   if (Test-CA -Root $CaSubDir -Name $Name) {
-    Write-Warning "Subordinate CA with name '$Name' already exists (skipping)"
+    Write-Verbose "Subordinate CA with name '$Name' already exists (skipping)"
     return
   }
 
@@ -67,10 +82,34 @@ $(($PermittedDNS | ForEach-Object { 'permitted;DNS.' + $i++ +  " = $_" }) -join 
     --name $Name
 }
 
+<#
+.DESCRIPTION
+Gets the names of registered subordinate certificate authorities.
+#>
 function Get-SuboridinateCAName() {
   Get-ChildItem $CaSubDir -Name
 }
 
+<#
+.DESCRIPTION
+Creates a new X.509 certificate.
+
+.PARAMETER Issuer
+The name of the subordinate CA to issue the certificate.
+
+.PARAMETER Request
+The path to the certificate signing request (CSR) config file.
+It will be used by the openssl-req command.
+
+.PARAMETER Type
+The type of certificate to create. Valid values are 'server' and 'client'.
+
+.PARAMETER Name
+The name of the key ([name].key) and certificate ([name].crt) files.
+
+.PARAMETER Destination
+The path to the directory where the key and certificate files will be created.
+#>
 function New-Certificate() {
   [CmdletBinding()]
   param(
@@ -110,11 +149,19 @@ function New-Certificate() {
   Remove-Item $Destination\$Name.csr -ErrorAction Ignore
 }
 
+<#
+.DESCRIPTION
+Installs the root certificate authority (CA) into the current user's trusted root store.
+#>
 function Install-RootCA() {
   $certPath = Join-Path -Path $CaRootDir root_ca ca.crt
   Install-Certificate -Path $certPath -StoreName Root -FriendlyName 'DevOpTools Development Root CA'
 }
 
+<#
+.DESCRIPTION
+Uninstalls the root certificate authority (CA) from the current user's trusted root store.
+#>
 function Uninstall-RootCA() {
   $certPath = Join-Path -Path $CaRootDir root_ca ca.crt
   Uninstall-Certificate -Path $certPath -StoreName Root

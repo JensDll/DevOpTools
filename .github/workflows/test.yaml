@@ -9,10 +9,12 @@ jobs:
     steps:
       - name: Checking out the repository
         uses: actions/checkout@v3
+
       - name: Running tests
         shell: pwsh
         working-directory: ./scripts
         run: ./test.ps1
+
   publish:
     runs-on: ubuntu-22.04
     defaults:
@@ -22,19 +24,23 @@ jobs:
     steps:
       - name: Checking out the repository
         uses: actions/checkout@v3
+
       - name: Registering local PowerShell repository
         run: |
           $repoPath = '~/psrepo'
-
           New-Item -Path $repoPath -ItemType Directory -Force
+          $repoPath = Resolve-Path -Path $repoPath
 
           Register-PSRepository -Name local `
-            -SourceLocation "$(Resolve-Path $repoPath)" `
-            -PublishLocation "$(Resolve-Path $repoPath)" `
+            -SourceLocation "$repoPath" `
+            -PublishLocation "$repoPath" `
             -InstallationPolicy Trusted
+
       - name: Publishing to local repository
         run: ./publish.ps1 -Local -Verbose
+
       - name: Installing from local repository
         run: Install-Module -Name DevOpTools -Repository local -Scope CurrentUser
+
       - name: Running tests on locally installed version
         run: ./test.ps1 -Installed

@@ -1,5 +1,15 @@
 ﻿$CredentialsFilePath = Join-Path $env:DEVOPTOOLS_HOME aws_credentials
 
+<#
+.DESCRIPTION
+Create new AWS credentials for the given username and stores them to the file system.
+
+.PARAMETER Username
+The username to create the credentials for.
+
+.PARAMETER Recreate
+Deletes any existing credentials and recreates them.
+#>
 function New-AWSCredential {
   [CmdletBinding()]
   param(
@@ -33,6 +43,13 @@ function New-AWSCredential {
   }
 }
 
+<#
+.DESCRIPTION
+Reads AWS credentials for the given username.
+
+.PARAMETER Username
+The username to read the credentials.
+#>
 function Read-AWSCredential {
   [CmdletBinding()]
   [OutputType([hashtable])]
@@ -57,6 +74,13 @@ function Read-AWSCredential {
   }
 }
 
+<#
+.DESCRIPTION
+Removes AWS credentials for the given username locally and remotely.
+
+.PARAMETER Username
+The username to remove the credentials.
+#>
 function Remove-AWSCredential {
   [CmdletBinding()]
   param(

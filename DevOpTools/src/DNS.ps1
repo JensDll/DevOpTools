@@ -33,25 +33,23 @@ function Add-DNSEntries() {
     return
   }
 
-  $isVerbose = $PSBoundParameters['Verbose'] -eq $true
-
   Remove-DNSEntries -Domain $Domain
 
-  Write-Verbose "Writing DNS entries to location: $HostFilePath"
+  Write-Verbose "Writing DNS entries to '$HostFilePath'"
 
   $hasNewlime = (Get-Content $HostFilePath -Raw) -Match [System.Environment]::NewLine + '$'
-
-  $entries = ($hasNewlime ? '' : [System.Environment]::NewLine) + "$IPAddress $Domain # Added by PowerShell DevOp Tools"
+  $entries = ($hasNewlime ? '' : [System.Environment]::NewLine) + "$IPAddress $Domain # Added by PowerShell DevOpTools"
 
   foreach ($subdomain in $Subdomains) {
-    $entries += [System.Environment]::NewLine + "$IPAddress $subdomain.$Domain # Added by PowerShell DevOp Tools"
+    $entries += [System.Environment]::NewLine + "$IPAddress $subdomain.$Domain # Added by PowerShell DevOpTools"
   }
 
   Add-Content -Path $HostFilePath -Value $entries -NoNewline
 
-  if ($isVerbose) {
+  if (-not $VerbosePreference -eq [System.Management.Automation.ActionPreference]::SilentlyContinue) {
+    Write-Verbose "The file's content is now the following:"
     Get-Content $HostFilePath -Raw
-    Write-Verbose 'Done ... Press Enter to exit:'
+    Write-Verbose 'Done! Press Enter to exit'
     Read-Host 1> $null
   }
 }
@@ -76,21 +74,22 @@ function Remove-DNSEntries() {
     return
   }
 
-  $isVerbose = $PSBoundParameters['Verbose'] -eq $true
-
   $lines = @()
 
   foreach ($line in Get-Content $HostFilePath) {
-    if ($line -NotMatch "$Domain # Added by PowerShell DevOp Tools") {
+    if ($line -NotMatch "$Domain # Added by PowerShell DevOpTools") {
       $lines += $line
     }
   }
 
+  Write-Verbose "Removing DNS entries from '$HostFilePath'"
+
   Set-Content -Path $HostFilePath -Value ($lines -join [System.Environment]::NewLine) -NoNewline
 
-  if ($isVerbose) {
+  if (-not $VerbosePreference -eq [System.Management.Automation.ActionPreference]::SilentlyContinue) {
+    Write-Verbose "The file's content is now the following:"
     Get-Content $HostFilePath -Raw
-    Write-Verbose 'Done ... Press Enter to exit:'
+    Write-Verbose 'Done! Press Enter to exit'
     Read-Host 1> $null
   }
 }

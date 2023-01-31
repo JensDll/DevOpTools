@@ -1,6 +1,4 @@
-﻿. $PSScriptRoot\Env.ps1
-
-$CredentialsFilePath = Join-Path $env:DEV_OP_TOOLS_HOME aws-credentials
+﻿$CredentialsFilePath = Join-Path $env:DEVOPTOOLS_HOME aws_credentials
 
 <#
 .DESCRIPTION
@@ -104,6 +102,7 @@ function Write-AWSCredentials {
 }
 
 function Test-AWSCredentials {
+  [OutputType([bool])]
   param(
     [Parameter(Mandatory, Position = 0)]
     [string]$UserName

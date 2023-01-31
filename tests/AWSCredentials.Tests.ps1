@@ -4,10 +4,10 @@
 
 Describe 'AWSCredentials' {
   BeforeEach {
-    $credentialsFilePath = "$([IO.Path]::GetTempPath())$([Guid]::NewGuid())-aws-credentials"
+    $credentialsFilePath = "$([IO.Path]::GetTempPath())$([Guid]::NewGuid())_aws_credentials"
 
     InModuleScope DevopTools {
-      $script:credentialsFilePath = $args[0]
+      $script:CredentialsFilePath = $args[0]
     } -ArgumentList $credentialsFilePath
 
     New-Item $credentialsFilePath -Force -ItemType File

@@ -31,11 +31,15 @@ do
     ;;
   -home)
     shift
-    export DEVOPTOOLS_CA_HOME="$1"
+    export CA_SUB_HOME="$1"
     ;;
-  -request-config)
+  -home-root)
     shift
-    declare -r request_config="$1"
+    export CA_ROOT_HOME="$1"
+    ;;
+  -request)
+    shift
+    declare -r request="$1"
     ;;
   -destination)
     shift
@@ -57,22 +61,26 @@ do
   shift
 done
 
-[[ -z $DEVOPTOOLS_CA_HOME ]] && __error "Missing value for parameter --home" && __usage
-[[ -z $request_config ]] && __error "Missing value for parameter --request-config" && __usage
+[[ -z $CA_SUB_HOME ]] && __error "Missing value for parameter --home" && __usage
+[[ -z $CA_ROOT_HOME ]] && __error "Missing value for parameter --home-root" && __usage
+[[ -z $request ]] && __error "Missing value for parameter --request" && __usage
 [[ -z $destination ]] && __error "Missing value for parameter --destination" && __usage
 [[ -z $name ]] && __error "Missing value for parameter --name" && __usage
 [[ $type != "server" && $type != "client" ]] && \
   __error "Invalid value for parameter --type; must be one of: server, client" && \
   __usage
 
-declare -r sub_config="$script_dir/sub.conf"
+declare -r config="$script_dir/sub.conf"
 
 declare -r key="$destination/$name.key"
 declare -r csr="$destination/$name.csr"
 declare -r crt="$destination/$name.crt"
 
-openssl genpkey -out "$key" -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -quiet
-openssl req -new -config "$request_config" -key "$key" -out "$csr"
-openssl ca -config "$sub_config" -in "$csr" -out "$crt" -extensions "${type}_ext" -notext -batch
+openssl genpkey -out "$key" -algorithm EC \
+  -pkeyopt ec_paramgen_curve:P-256 -quiet
 
-cat "$DEVOPTOOLS_CA_HOME/sub_ca.crt" "$DEVOPTOOLS_CA_HOME/root_ca.crt" >> "$crt"
+openssl req -new -config "$request" -key "$key" -out "$csr"
+
+openssl ca -config "$config" -in "$csr" -out "$crt" -extensions "${type}_ext" -notext -batch
+
+cat "$CA_SUB_HOME/ca.crt" "$CA_ROOT_HOME/ca.crt" >> "$crt"

@@ -1,5 +1,5 @@
 ﻿BeforeAll {
-  . "$PSScriptRoot\import.ps1"
+  . "$PSScriptRoot\__fixtures__\import.ps1"
 }
 
 Describe 'ConvertTo-WSLPath' {

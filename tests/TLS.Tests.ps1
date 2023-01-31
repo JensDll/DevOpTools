@@ -1,16 +1,19 @@
 ﻿BeforeAll {
-  . "$PSScriptRoot\import.ps1"
+  . "$PSScriptRoot\__fixtures__\import.ps1"
 }
 
 Describe 'New-RootCA' {
   BeforeAll {
+    # Arrange
     InModuleScope DevOpTools {
       $script:CaRootDir = $args[0]
     } -ArgumentList "$TestDrive\root"
 
+    # Act
     New-RootCA -Verbose
   }
 
+  # Assert
   It 'Created the root CA certificate' {
     'TestDrive:\root\root_ca\ca.crt' | Should -Exist
     'TestDrive:\root\root_ca\ca.csr' | Should -Exist
@@ -21,11 +24,13 @@ Describe 'New-RootCA' {
 
 Describe 'PKI certificate lifecycle' {
   BeforeAll {
+    # Arrange
     InModuleScope DevOpTools {
       $script:CaRootDir = $args[0]
       $script:CaSubDir = $args[1]
     } -ArgumentList "$TestDrive\root", "$TestDrive\sub"
 
+    # Act
     New-RootCA
     New-SubordinateCA -Name sub_ca1
     New-SubordinateCA -Name sub_ca2 -PermittedDNS foo.com, bar.com, baz.com
@@ -35,6 +40,7 @@ Describe 'PKI certificate lifecycle' {
       -Name sub_ca2 -Destination $TestDrive
   }
 
+  # Assert
   It 'Created the certficates' {
     'TestDrive:\sub_ca1.crt' | Should -Exist
     'TestDrive:\sub_ca2.crt' | Should -Exist

@@ -1,4 +1,4 @@
-﻿. $PSScriptRoot\WSL.ps1
+﻿# . $PSScriptRoot\WSL.ps1
 
 $CaRootDir = Join-Path $env:DEVOPTOOLS_HOME ca root
 $CaSubDir = Join-Path $env:DEVOPTOOLS_HOME ca sub

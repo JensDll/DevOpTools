@@ -1,12 +1,12 @@
 ﻿BeforeAll {
-  Import-Module $PSScriptRoot\..\DevOpTools -Force
+  . "$PSScriptRoot\import.ps1"
 }
 
 Describe 'AWSCredentials' {
   BeforeEach {
     $credentialsFilePath = "$([IO.Path]::GetTempPath())$([Guid]::NewGuid())_aws_credentials"
 
-    InModuleScope DevopTools {
+    InModuleScope DevOpTools {
       $script:CredentialsFilePath = $args[0]
     } -ArgumentList $credentialsFilePath
 
@@ -21,9 +21,9 @@ Describe 'AWSCredentials' {
           return 'access-key secret-key'
         }
       }
-    } -ModuleName DevopTools
+    } -ModuleName DevOpTools
 
-    Mock Write-Error {} -ModuleName DevopTools
+    Mock Write-Error {} -ModuleName DevOpTools
   }
 
   Describe 'Read-AWSCredentials' {
@@ -48,7 +48,7 @@ Describe 'AWSCredentials' {
     It "Fails if the user doesn't exist" {
       # Act + Assert
       { Read-AWSCredentials -UserName 'Invalid' } | Should -Throw
-      Should -Invoke -CommandName Write-Error -ModuleName DevopTools -Exactly -Times 1
+      Should -Invoke -CommandName Write-Error -ModuleName DevOpTools -Exactly -Times 1
     }
   }
 
@@ -74,9 +74,9 @@ Describe 'AWSCredentials' {
 
         # Assert
         It -Skip:(-not $withRecreate) 'call iam delete-access-key' {
-          Should -Invoke -CommandName 'aws' -ModuleName DevopTools -Exactly -Times 1 `
+          Should -Invoke -CommandName 'aws' -ModuleName DevOpTools -Exactly -Times 1 `
             -ParameterFilter { "$args" -match 'iam delete-access-key.+--access-key-id access-key-1' }
-          Should -Invoke -CommandName 'aws' -ModuleName DevopTools -Exactly -Times 1 `
+          Should -Invoke -CommandName 'aws' -ModuleName DevOpTools -Exactly -Times 1 `
             -ParameterFilter { "$args" -match 'iam delete-access-key.+--access-key-id access-key-2' }
         }
 
@@ -85,7 +85,7 @@ Describe 'AWSCredentials' {
         }
 
         It 'Calls aws iam create-access-key' {
-          Should -Invoke -CommandName 'aws' -ModuleName DevopTools -Exactly -Times 1 `
+          Should -Invoke -CommandName 'aws' -ModuleName DevOpTools -Exactly -Times 1 `
             -ParameterFilter { "$args" -match 'iam create-access-key.+--user-name TestUser' }
         }
 
@@ -96,7 +96,7 @@ Describe 'AWSCredentials' {
 
         It -Skip:$withRecreate 'Fails if credentials already exist' {
           { New-AWSCredentials -UserName 'TestUser' } | Should -Throw
-          Should -Invoke -CommandName Write-Error -ModuleName DevopTools -Exactly -Times 1
+          Should -Invoke -CommandName Write-Error -ModuleName DevOpTools -Exactly -Times 1
         }
       }
     }

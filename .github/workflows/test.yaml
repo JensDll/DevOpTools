@@ -14,7 +14,6 @@ jobs:
         working-directory: ./scripts
         run: ./test.ps1
   publish:
-    needs: pester
     runs-on: ubuntu-22.04
     steps:
       - name: Checking out the repository
@@ -34,6 +33,10 @@ jobs:
         shell: pwsh
         working-directory: ./scripts
         run: ./publish.ps1 -Local -Verbose
-      - name: Installing local module
+      - name: Installing from local repository
         shell: pwsh
         run: Install-Module -Name DevOpTools -Repository local -Scope CurrentUser
+      - name: Running tests on installed version
+        shell: pwsh
+        working-directory: ./scripts
+        run: ./test.ps1 -Installed

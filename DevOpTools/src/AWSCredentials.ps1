@@ -35,6 +35,7 @@ function New-AWSCredential {
 
 function Read-AWSCredential {
   [CmdletBinding()]
+  [OutputType([hashtable])]
   param(
     [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [string]$Username

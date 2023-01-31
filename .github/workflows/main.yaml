@@ -24,6 +24,6 @@ jobs:
     if: github.event_name == 'release' && github.event.action == 'published'
     needs:
       - test
-      - static-analysis
+      - analysis
     uses: ./.github/workflows/publish.yaml
     secrets: inherit

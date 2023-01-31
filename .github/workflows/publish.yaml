@@ -11,7 +11,7 @@ on:
 jobs:
   main:
     runs-on: ubuntu-22.04
-    environment: PowerShellGallery
+    environment: PowerShell Gallery
     steps:
       - name: Checking out the repository
         uses: actions/checkout@v3

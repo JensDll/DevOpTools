@@ -1,4 +1,8 @@
-﻿$CaRootDir = Join-Path -Path $env:DEVOPTOOLS_HOME ca root
+﻿using namespace System.Security.Cryptography.X509Certificates
+
+using module .\ValidateSet
+
+$CaRootDir = Join-Path -Path $env:DEVOPTOOLS_HOME ca root
 $CaSubDir = Join-Path -Path $env:DEVOPTOOLS_HOME ca sub
 
 <#
@@ -10,13 +14,13 @@ function New-RootCA() {
   param()
 
   if (Test-CA -Root $CaRootDir -Name root_ca) {
-    Write-Verbose 'Root CA already exists (skipping)'
+    Write-Warning 'Root CA already exists (skipping)'
     return
   }
 
   $rootCa = Initialize-CA -Root $CaRootDir -Name root_ca
 
-  $script = "$PSScriptRoot\CA\create_root.sh" | ConvertTo-WSLPath
+  $script = "$PSScriptRoot\CertificateAuthority\create_root.sh" | ConvertTo-WSLPath
   bash $script --home $rootCa.Home
 }
 
@@ -24,10 +28,11 @@ function New-RootCA() {
 .DESCRIPTION
 Creates a new subordinate certificate authority (CA) from the root CA
 if one with the given name doesn't exist. If the root CA doesn't exist,
-New-SubordinateCA will implicitly create it.
+New-SubordinateCA will create it with a warning.
 
 .PARAMETER Name
-The name of the subordinate CA to create.
+The name of the new subordinate CA. It will be used a reference
+in other command like New-Certificate.
 
 .PARAMETER PermittedDNS
 A list of DNS names that the subordinate CA is permitted to issue.
@@ -73,9 +78,9 @@ $(($PermittedDNS | ForEach-Object { 'permitted;DNS.' + $i++ +  " = $_" }) -join 
 "@
   }
 
-  Out-File -FilePath "$CaRootDir/root_ca/include/sub_ca_ext.conf" -InputObject $subCaExt
+  Out-File -FilePath "$CaRootDir\root_ca\include\sub_ca_ext.conf" -InputObject $subCaExt
 
-  $script = "$PSScriptRoot\CA\create_sub.sh" | ConvertTo-WSLPath
+  $script = "$PSScriptRoot\CertificateAuthority\create_sub.sh" | ConvertTo-WSLPath
   bash $script `
     --home $subCa.Home `
     --home-root (Join-Path $CaRootDir root_ca | ConvertTo-WSLPath) `
@@ -84,16 +89,10 @@ $(($PermittedDNS | ForEach-Object { 'permitted;DNS.' + $i++ +  " = $_" }) -join 
 
 <#
 .DESCRIPTION
-Gets the names of registered subordinate certificate authorities.
+Returns the names of available subordinate certificate authorities (CAs).
 #>
 function Get-SuboridinateCAName() {
   Get-ChildItem $CaSubDir -Name
-}
-
-class ValidIssuer : System.Management.Automation.IValidateSetValuesGenerator {
-  [string[]] GetValidValues() {
-    return Get-SuboridinateCAName
-  }
 }
 
 <#
@@ -101,20 +100,20 @@ class ValidIssuer : System.Management.Automation.IValidateSetValuesGenerator {
 Creates a new X.509 certificate.
 
 .PARAMETER Issuer
-The name of the subordinate CA to issue the certificate.
+The name of the subordinate certificate authority (CA) to issue the certificate.
 
 .PARAMETER Request
 The path to the certificate signing request (CSR) config file.
 It will be used by the openssl-req command.
 
 .PARAMETER Type
-The type of certificate to create. Valid values are 'server' and 'client'.
+The type of certificate. Valid values are 'server' and 'client'.
 
 .PARAMETER Name
-The name of the key ([name].key) and certificate ([name].crt) files.
+The name of the key ([name].key) and certificate ([name].crt) file.
 
 .PARAMETER Destination
-The path to the directory where the key and certificate files will be created.
+The directory where the key and certificate are created.
 #>
 function New-Certificate() {
   [CmdletBinding()]
@@ -144,7 +143,7 @@ function New-Certificate() {
     New-Item $Destination -ItemType Directory 1> $null
   }
 
-  $script = "$PSScriptRoot\CA\new_cert.sh" | ConvertTo-WSLPath
+  $script = "$PSScriptRoot\CertificateAuthority\new_cert.sh" | ConvertTo-WSLPath
   bash $script `
     --home (Join-Path $CaSubDir $Issuer | ConvertTo-WSLPath) `
     --home-root (Join-Path $CaRootDir root_ca | ConvertTo-WSLPath) `
@@ -175,7 +174,7 @@ function Uninstall-RootCA() {
 }
 
 function Install-Certificate() {
-  [OutputType([System.Security.Cryptography.X509Certificates.X509Certificate2])]
+  [OutputType([X509Certificate2])]
   param(
     [Parameter(Mandatory)]
     [string]$Path,
@@ -184,11 +183,10 @@ function Install-Certificate() {
     [string]$FriendlyName
   )
 
-  $store = Open-X509Store -StoreName $StoreName `
-    -OpenFlags ([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+  $store = Open-X509Store -StoreName $StoreName -OpenFlags ([OpenFlags]::ReadWrite)
 
   try {
-    $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($Path)
+    $cert = [X509Certificate2]::new($Path)
     if ($FriendlyName) { $cert.FriendlyName = $FriendlyName }
     $store.Add($cert)
   } finally {
@@ -209,7 +207,7 @@ function Uninstall-Certificate() {
   $store = Open-X509Store -StoreName $StoreName
 
   try {
-    $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($Path)
+    $cert = [X509Certificate2]::new($Path)
     $store.Remove($cert)
   } finally {
     $store.Close()
@@ -217,17 +215,15 @@ function Uninstall-Certificate() {
 }
 
 function Open-X509Store() {
-  [OutputType([System.Security.Cryptography.X509Certificates.X509Store])]
+  [OutputType([X509Store])]
   param(
     [Parameter(Mandatory)]
     [string]$StoreName,
-    [System.Security.Cryptography.X509Certificates.StoreLocation]$StoreLocation
-    = [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser,
-    [System.Security.Cryptography.X509Certificates.OpenFlags]$OpenFlags
-    = [System.Security.Cryptography.X509Certificates.OpenFlags]::MaxAllowed
+    [StoreLocation]$StoreLocation = [StoreLocation]::CurrentUser,
+    [OpenFlags]$OpenFlags = [OpenFlags]::MaxAllowed
   )
 
-  $store = [System.Security.Cryptography.X509Certificates.X509Store]::new($StoreName, $StoreLocation)
+  $store = [X509Store]::new($StoreName, $StoreLocation)
   if (-not $?) {
     throw "Failed to access the $StoreLocation\$StoreName certificate store!"
   }
@@ -249,7 +245,7 @@ function Test-CA() {
     [string]$Name
   )
 
-  return [bool](Test-Path (Join-Path -Path $Root $Name ca.pfx))
+  return Test-Path "$Root\$Name\ca.pfx" -PathType Leaf
 }
 
 function Initialize-CA() {

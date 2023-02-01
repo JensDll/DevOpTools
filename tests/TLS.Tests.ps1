@@ -1,64 +1,127 @@
-﻿BeforeAll {
+﻿using namespace System.Security.Cryptography.X509Certificates
+
+BeforeAll {
   . "$PSScriptRoot\__fixtures__\import.ps1"
 }
 
 Describe 'New-RootCA' {
   BeforeAll {
-    # Arrange
     InModuleScope DevOpTools {
       $script:CaRootDir = $args[0]
     } -ArgumentList "$TestDrive\root"
 
-    $script:rootCa = 'TestDrive:\root\root_ca'
-
-    # Act
     New-RootCA -Verbose
+
+    $script:rootCa = [X509Certificate2]::new("$TestDrive\root\root_ca\ca.crt")
   }
 
-  It 'Created the right amount files' {
-    Get-ChildItem $rootCa -File | Should -HaveCount 3
-    Get-ChildItem "$rootCa\private" | Should -HaveCount 1
+  It 'Creates the right number of files' {
+    Get-ChildItem 'TestDrive:\root\root_ca' -File | Should -HaveCount 3
+    Get-ChildItem 'TestDrive:\root\root_ca\private' | Should -HaveCount 1
   }
 
-  # Assert
-  It 'Created the root CA' {
-    "$rootCa\ca.crt" | Should -Exist
-    "$rootCa\ca.csr" | Should -Exist
-    "$rootCa\ca.pfx" | Should -Exist
-    "$rootCa\private\ca.key" | Should -Exist
+  It 'Creates the root CA' {
+    'TestDrive:\root\root_ca\ca.crt' | Should -Exist
+    'TestDrive:\root\root_ca\ca.csr' | Should -Exist
+    'TestDrive:\root\root_ca\ca.pfx' | Should -Exist
+    'TestDrive:\root\root_ca\private\ca.key' | Should -Exist
+  }
+
+  It 'Is signed by itself' {
+    $rootCa.Issuer | Should -Be $rootCa.Subject
   }
 }
 
-Describe 'PKI certificate lifecycle' {
+Describe 'New-SubordinateCA' {
   BeforeAll {
-    # Arrange
     InModuleScope DevOpTools {
       $script:CaRootDir = $args[0]
       $script:CaSubDir = $args[1]
     } -ArgumentList "$TestDrive\root", "$TestDrive\sub"
 
-    # Act
+    New-SubordinateCA -Name ca
+
+    $script:rootCa = [X509Certificate2]::new("$TestDrive\root\root_ca\ca.crt")
+    $script:subCa = [X509Certificate2]::new("$TestDrive\sub\ca\ca.crt")
+  }
+
+  It 'Creates the right number of files' {
+    Get-ChildItem 'TestDrive:\sub\ca' -File | Should -HaveCount 3
+    Get-ChildItem 'TestDrive:\sub\ca\private' | Should -HaveCount 1
+  }
+
+  It 'Creates the subordinate CA' {
+    'TestDrive:\sub\ca\ca.crt' | Should -Exist
+    'TestDrive:\sub\ca\ca.csr' | Should -Exist
+    'TestDrive:\sub\ca\ca.pfx' | Should -Exist
+    'TestDrive:\sub\ca\private\ca.key' | Should -Exist
+  }
+
+  It 'Is issued by the root CA' {
+    $subCa.Issuer | Should -Be $rootCa.Subject
+  }
+
+  Describe 'With name constraints' {
+    BeforeAll {
+      New-SubordinateCA -Name ca_name_constraints -PermittedDNS foo.com, bar.com, baz.com
+
+      $script:subCa = [X509Certificate2]::new("$TestDrive\sub\ca_name_constraints\ca.crt")
+    }
+
+    It 'Has name constraints' {
+      [X509Extension]$extension = $subCa.Extensions | Where-Object { $_.Oid.Value -eq '2.5.29.30' }
+      $extension | Should -HaveCount 1
+      $extension.Format($false) | Should -Be 'Permitted: [1]Subtrees (0..Max):DNS Name=foo.com, [2]Subtrees (0..Max):DNS Name=bar.com, [3]Subtrees (0..Max):DNS Name=baz.com, Excluded: [1]Subtrees (0..Max):IP Address=0.0.0.0, Mask=0.0.0.0, [2]Subtrees (0..Max):IP Address=0000:0000:0000:0000:0000:0000:0000:0000, Mask=0000:0000:0000:0000:0000:0000:0000:0000'
+    }
+  }
+}
+
+Describe 'PKI certificate lifecycle' {
+  BeforeAll {
+    InModuleScope DevOpTools {
+      $script:CaRootDir = $args[0]
+      $script:CaSubDir = $args[1]
+    } -ArgumentList "$TestDrive\root", "$TestDrive\sub"
+
     New-RootCA
-    New-SubordinateCA -Name sub_ca1
-    New-SubordinateCA -Name sub_ca2 -PermittedDNS foo.com, bar.com, baz.com
-    New-Certificate -Issuer sub_ca1 -Request $PSScriptRoot\__fixtures__\cert.conf `
-      -Name sub_ca1 -Destination $TestDrive
-    New-Certificate -Issuer sub_ca2 -Request $PSScriptRoot\__fixtures__\cert.conf `
-      -Name sub_ca2 -Destination $TestDrive
   }
 
-  # Assert
-  It 'Created the right amount files' {
-    Get-ChildItem 'TestDrive:\' -File | Should -HaveCount 4
-  }
+  Describe 'New-SubordinateCA' {
+    BeforeAll {
+      New-SubordinateCA -Name sub_ca1
+      New-SubordinateCA -Name sub_ca2 -PermittedDNS foo.com, bar.com, baz.com
 
-  It 'Created the certficates' {
-    'TestDrive:\sub_ca1.crt' | Should -Exist
-    'TestDrive:\sub_ca2.crt' | Should -Exist
-  }
+      $script:subCa1 = [X509Certificate2]::new("$TestDrive\sub\sub_ca1\ca.crt")
+      $script:subCa2 = [X509Certificate2]::new("$TestDrive\sub\sub_ca2\ca.crt")
+    }
 
-  It 'Created the keys' {
-    'TestDrive:\sub_ca1.key' | Should -Exist
-    'TestDrive:\sub_ca2.key' | Should -Exist
+    Describe 'Get-SuboridinateCAName' {
+      It 'Returns the names of registered subordinate certificate authorities' {
+        Get-SuboridinateCAName | Should -BeExactly 'sub_ca1', 'sub_ca2'
+      }
+    }
+
+    Describe 'New-Certificate' {
+      BeforeAll {
+        New-Certificate -Issuer sub_ca1 -Request $PSScriptRoot\__fixtures__\cert.conf `
+          -Name sub_ca1 -Destination $TestDrive
+        New-Certificate -Issuer sub_ca2 -Request $PSScriptRoot\__fixtures__\cert.conf `
+          -Name sub_ca2 -Destination $TestDrive
+      }
+
+      It 'Creates the right number of files' {
+        Get-ChildItem 'TestDrive:\' -File | Should -HaveCount 4
+      }
+
+      It 'Creates the certficates' {
+        'TestDrive:\sub_ca1.crt' | Should -Exist
+        'TestDrive:\sub_ca2.crt' | Should -Exist
+      }
+
+      It 'Creates the keys' {
+        'TestDrive:\sub_ca1.key' | Should -Exist
+        'TestDrive:\sub_ca2.key' | Should -Exist
+      }
+    }
   }
 }

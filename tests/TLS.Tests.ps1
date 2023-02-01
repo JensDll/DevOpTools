@@ -69,8 +69,8 @@ Describe 'New-SubordinateCA' {
     }
 
     It 'Has name constraints' {
-      [X509Extension]$extension = $subCa.Extensions | Where-Object { $_.Oid.Value -eq '2.5.29.30' }
-      $extension | Should -HaveCount 1
+      $extensions = $subCa.Extensions | Where-Object { $_.Oid.Value -eq '2.5.29.30' }
+      $extensions | Should -HaveCount 1
     }
   }
 }

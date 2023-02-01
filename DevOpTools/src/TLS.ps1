@@ -42,12 +42,12 @@ function New-SubordinateCA() {
   )
 
   if (-not (Test-CA -Root $CaRootDir -Name root_ca)) {
-    Write-Verbose 'Subordinate CA cannot be created without a root CA (creating)'
+    Write-Warning 'Subordinate CA cannot be created without a root CA (creating)'
     New-RootCA
   }
 
   if (Test-CA -Root $CaSubDir -Name $Name) {
-    Write-Verbose "Subordinate CA with name '$Name' already exists (skipping)"
+    Write-Warning "Subordinate CA with name '$Name' already exists (skipping)"
     return
   }
 
@@ -90,6 +90,12 @@ function Get-SuboridinateCAName() {
   Get-ChildItem $CaSubDir -Name
 }
 
+class ValidIssuer : System.Management.Automation.IValidateSetValuesGenerator {
+  [string[]] GetValidValues() {
+    return Get-SuboridinateCAName
+  }
+}
+
 <#
 .DESCRIPTION
 Creates a new X.509 certificate.
@@ -114,13 +120,14 @@ function New-Certificate() {
   [CmdletBinding()]
   param(
     [Parameter(Mandatory)]
+    [ValidateSet([ValidIssuer])]
     [string] $Issuer,
     [Parameter(Mandatory)]
     [string] $Request,
     [ValidateSet('server', 'client')]
     [string] $Type = 'server',
     [string] $Name = 'tls',
-    [string] $Destination = $(Resolve-Path .)
+    [string] $Destination = (Resolve-Path .)
   )
 
   if (-not (Test-CA -Root $CaSubDir -Name $Issuer)) {

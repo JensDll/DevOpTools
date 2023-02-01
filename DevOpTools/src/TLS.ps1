@@ -2,8 +2,8 @@
 
 using module .\ValidateSet
 
-$CaRootDir = Join-Path -Path $env:DEVOPTOOLS_HOME ca root
-$CaSubDir = Join-Path -Path $env:DEVOPTOOLS_HOME ca sub
+$CaRootDir = Join-Path $env:DEVOPTOOLS_HOME ca root
+$CaSubDir = Join-Path $env:DEVOPTOOLS_HOME ca sub
 
 <#
 .DESCRIPTION
@@ -160,7 +160,7 @@ function New-Certificate() {
 Installs the root certificate authority (CA) into the current user's trusted root store.
 #>
 function Install-RootCA() {
-  $certPath = Join-Path -Path $CaRootDir root_ca ca.crt
+  $certPath = Join-Path $CaRootDir root_ca ca.crt
   Install-Certificate -Path $certPath -StoreName Root -FriendlyName 'DevOpTools Development Root CA'
 }
 
@@ -169,7 +169,7 @@ function Install-RootCA() {
 Uninstalls the root certificate authority (CA) from the current user's trusted root store.
 #>
 function Uninstall-RootCA() {
-  $certPath = Join-Path -Path $CaRootDir root_ca ca.crt
+  $certPath = Join-Path $CaRootDir root_ca ca.crt
   Uninstall-Certificate -Path $certPath -StoreName Root
 }
 

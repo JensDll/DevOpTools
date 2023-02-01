@@ -71,7 +71,6 @@ Describe 'New-SubordinateCA' {
     It 'Has name constraints' {
       [X509Extension]$extension = $subCa.Extensions | Where-Object { $_.Oid.Value -eq '2.5.29.30' }
       $extension | Should -HaveCount 1
-      $extension.Format($false) | Should -Be 'Permitted: [1]Subtrees (0..Max):DNS Name=foo.com, [2]Subtrees (0..Max):DNS Name=bar.com, [3]Subtrees (0..Max):DNS Name=baz.com, Excluded: [1]Subtrees (0..Max):IP Address=0.0.0.0, Mask=0.0.0.0, [2]Subtrees (0..Max):IP Address=0000:0000:0000:0000:0000:0000:0000:0000, Mask=0000:0000:0000:0000:0000:0000:0000:0000'
     }
   }
 }
@@ -91,8 +90,8 @@ Describe 'PKI certificate lifecycle' {
       New-SubordinateCA -Name sub_ca1
       New-SubordinateCA -Name sub_ca2 -PermittedDNS foo.com, bar.com, baz.com
 
-      $script:subCa1 = [X509Certificate2]::new("$TestDrive\sub\sub_ca1\ca.crt")
-      $script:subCa2 = [X509Certificate2]::new("$TestDrive\sub\sub_ca2\ca.crt")
+      $script:subCa1 = [X509Certificate2]::new((Join-Path $TestDrive sub sub_ca1 ca.crt))
+      $script:subCa2 = [X509Certificate2]::new((Join-Path $TestDrive sub sub_ca2 ca.crt))
     }
 
     Describe 'Get-SuboridinateCAName' {

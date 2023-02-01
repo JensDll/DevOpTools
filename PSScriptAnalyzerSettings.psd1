@@ -1,5 +1,5 @@
 ﻿@{
-  Severity            = @('Error', 'Warning', 'Information')
+  Severity            = @('Error', 'Warning')
   IncludeDefaultRules = $true
   ExcludeRules        = @(
     'PSUseShouldProcessForStateChangingFunctions'

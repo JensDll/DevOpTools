@@ -12,7 +12,7 @@ Describe 'New-RootCA' {
 
     New-RootCA -Verbose
 
-    $script:rootCa = [X509Certificate2]::new((Join-Path -Path $TestDrive, root, root_ca, ca.crt))
+    $script:rootCa = [X509Certificate2]::new((Join-Path $TestDrive root root_ca ca.crt))
   }
 
   It 'Creates the right number of files' {
@@ -41,8 +41,8 @@ Describe 'New-SubordinateCA' {
 
     New-SubordinateCA -Name ca
 
-    $script:rootCa = [X509Certificate2]::new((Join-Path -Path $TestDrive, root, root_ca, ca.crt))
-    $script:subCa = [X509Certificate2]::new((Join-Path -Path $TestDrive, sub, ca, ca.crt))
+    $script:rootCa = [X509Certificate2]::new((Join-Path $TestDrive root root_ca ca.crt))
+    $script:subCa = [X509Certificate2]::new((Join-Path $TestDrive sub ca ca.crt))
   }
 
   It 'Creates the right number of files' {
@@ -65,7 +65,7 @@ Describe 'New-SubordinateCA' {
     BeforeAll {
       New-SubordinateCA -Name ca_name_constraints -PermittedDNS foo.com, bar.com, baz.com
 
-      $script:subCa = [X509Certificate2]::new((Join-Path -Path $TestDrive, sub, ca_name_constraints, ca.crt))
+      $script:subCa = [X509Certificate2]::new((Join-Path $TestDrive sub ca_name_constraints ca.crt))
     }
 
     It 'Has name constraints' {

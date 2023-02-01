@@ -6,12 +6,13 @@ BeforeAll {
 
 Describe 'New-RootCA' {
   BeforeAll {
-    InModuleScope DevOpTools {
-      $script:CaRootDir = $args[0]
-    } -ArgumentList "$TestDrive\root"
+    InModuleScope CertificateAuthority {
+      [CertificateAuthority]::BaseDir = $args[0]
+      [CertificateAuthority]::BaseDirWsl = $args[0] | ConvertTo-WSLPath
+      [RootCertificateAuthority]::BaseDir = Join-Path $args[0] root
+    } -ArgumentList "$TestDrive"
 
     New-RootCA -Verbose
-
     $script:rootCa = [X509Certificate2]::new((Join-Path $TestDrive root root_ca ca.crt))
   }
 
@@ -34,13 +35,15 @@ Describe 'New-RootCA' {
 
 Describe 'New-SubordinateCA' {
   BeforeAll {
-    InModuleScope DevOpTools {
-      $script:CaRootDir = $args[0]
-      $script:CaSubDir = $args[1]
-    } -ArgumentList "$TestDrive\root", "$TestDrive\sub"
+    InModuleScope CertificateAuthority {
+      [CertificateAuthority]::BaseDir = $args[0]
+      [CertificateAuthority]::BaseDirWsl = $args[0] | ConvertTo-WSLPath
+      [RootCertificateAuthority]::BaseDir = Join-Path $args[0] root
+      [SubordinateCertificateAuthority]::BaseDir = Join-Path $args[0] sub
+    } -ArgumentList "$TestDrive"
 
+    New-RootCA
     New-SubordinateCA -Name ca
-
     $script:rootCa = [X509Certificate2]::new((Join-Path $TestDrive root root_ca ca.crt))
     $script:subCa = [X509Certificate2]::new((Join-Path $TestDrive sub ca ca.crt))
   }
@@ -63,14 +66,17 @@ Describe 'New-SubordinateCA' {
 
   Describe 'With name constraints' {
     BeforeAll {
-      New-SubordinateCA -Name ca_name_constraints -PermittedDNS foo.com, bar.com, baz.com
-
+      New-SubordinateCA -Name ca_name_constraints -PermittedDNS foo.com, bar.com
       $script:subCa = [X509Certificate2]::new((Join-Path $TestDrive sub ca_name_constraints ca.crt))
     }
 
-    It 'Has name constraints' {
+    It 'Has correct name constraints' {
       $extensions = $subCa.Extensions | Where-Object { $_.Oid.Value -eq '2.5.29.30' }
       $extensions | Should -HaveCount 1
+      [X509Extension]$nameConstraints = $extensions
+      $result = $nameConstraints.Format($true)
+      $result | Should -Match 'DNS Name=foo.com'
+      $result | Should -Match 'DNS Name=bar.com'
     }
   }
 }

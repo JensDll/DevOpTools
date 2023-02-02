@@ -13,7 +13,7 @@ Describe 'New-RootCA' {
       [RootCertificateAuthority]::BaseDir = Join-Path $args[0] root
     } -ArgumentList "$TestDrive"
 
-    New-RootCA -Verbose
+    New-RootCA
     $script:rootCa = [X509Certificate2]::new((Join-Path $TestDrive root root_ca ca.crt))
   }
 
@@ -84,10 +84,12 @@ Describe 'New-SubordinateCA' {
 
 Describe 'PKI certificate lifecycle' {
   BeforeAll {
-    InModuleScope DevOpTools {
-      $script:CaRootDir = $args[0]
-      $script:CaSubDir = $args[1]
-    } -ArgumentList "$TestDrive\root", "$TestDrive\sub"
+    InModuleScope CertificateAuthority {
+      [CertificateAuthority]::BaseDir = $args[0]
+      [CertificateAuthority]::BaseDirWsl = $args[0] | ConvertTo-WSLPath
+      [RootCertificateAuthority]::BaseDir = Join-Path $args[0] root
+      [SubordinateCertificateAuthority]::BaseDir = Join-Path $args[0] sub
+    } -ArgumentList "$TestDrive"
 
     New-RootCA
   }
@@ -127,6 +129,58 @@ Describe 'PKI certificate lifecycle' {
       It 'Creates the keys' {
         'TestDrive:\sub_ca1.key' | Should -Exist
         'TestDrive:\sub_ca2.key' | Should -Exist
+      }
+    }
+  }
+}
+
+Describe 'Cleanup' {
+  BeforeAll {
+    InModuleScope CertificateAuthority {
+      [CertificateAuthority]::BaseDir = $args[0]
+      [CertificateAuthority]::BaseDirWsl = $args[0] | ConvertTo-WSLPath
+      [RootCertificateAuthority]::BaseDir = Join-Path $args[0] root
+      [SubordinateCertificateAuthority]::BaseDir = Join-Path $args[0] sub
+    } -ArgumentList "$TestDrive"
+
+    New-RootCA
+    New-SubordinateCA -Name sub_ca1
+    New-SubordinateCA -Name sub_ca2
+  }
+
+  It 'Created the certificates' {
+    'TestDrive:\root\root_ca\ca.crt' | Should -Exist
+    'TestDrive:\sub\sub_ca1\ca.crt' | Should -Exist
+    'TestDrive:\sub\sub_ca2\ca.crt' | Should -Exist
+  }
+
+  Describe 'Remove-RootCA' {
+    BeforeAll {
+      Mock -ModuleName DevOpTools Uninstall-RootCA {}
+      Remove-RootCA
+    }
+
+    It 'Removes the root CA' {
+      'TestDrive:\root\root_ca' | Should -Not -Exist
+    }
+
+    It 'Calls Uninstall-RootCA' {
+      Should -Invoke -CommandName Uninstall-RootCA -ModuleName DevOpTools -Scope Describe -Times 1
+    }
+  }
+
+  Describe 'Remove-SubordinateCA' {
+    It 'Failes if the subordinate CA does not exist' {
+      { Remove-SubordinateCA -Name 'does_not_exist' } | Should -Throw
+    }
+
+    Context 'Remove <_>' -ForEach @('sub_ca1', 'sub_ca2') {
+      BeforeAll {
+        Remove-SubordinateCA -Name $_
+      }
+
+      It 'Removes the subordinate CA' {
+        "TestDrive:\sub\$_" | Should -Not -Exist
       }
     }
   }

@@ -177,7 +177,7 @@ function Install-Certificate() {
 
   try {
     $cert = [X509Certificate2]::new($Path)
-    if ($FriendlyName) { $cert.FriendlyName = $FriendlyName }
+    if ($FriendlyName -and $IsWindows) { $cert.FriendlyName = $FriendlyName }
     $store.Add($cert)
   } finally {
     $store.Close()

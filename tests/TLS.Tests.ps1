@@ -1,4 +1,5 @@
-﻿using namespace System.Text.RegularExpressions
+﻿using namespace System.Diagnostics.CodeAnalysis
+using namespace System.Text.RegularExpressions
 using namespace System.Security.Cryptography
 using namespace System.Security.Cryptography.X509Certificates
 
@@ -16,7 +17,7 @@ Describe 'New-RootCA' {
     } -ArgumentList "$TestDrive"
 
     New-RootCA
-    [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+    [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
     $rootCa = [X509Certificate2]::new((Join-Path $TestDrive root root_ca ca.crt))
   }
 
@@ -56,14 +57,14 @@ Describe 'New-SubordinateCA' {
   Context 'With a root CA' {
     BeforeAll {
       New-RootCA
-      [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+      [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
       $rootCa = [X509Certificate2]::new((Join-Path $TestDrive root root_ca ca.crt))
     }
 
     Context 'Without extensions' {
       BeforeAll {
         New-SubordinateCA -Name ca
-        [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+        [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
         $subCa = [X509Certificate2]::new((Join-Path $TestDrive sub ca ca.crt))
       }
 
@@ -87,7 +88,7 @@ Describe 'New-SubordinateCA' {
     Context 'With name constraints' {
       BeforeAll {
         New-SubordinateCA -Name ca_name_constraints -PermittedDNS foo.com, bar.com 1> $null
-        [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+        [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
         $subCa = [X509Certificate2]::new((Join-Path $TestDrive sub ca_name_constraints ca.crt))
       }
 
@@ -119,9 +120,9 @@ Describe 'PKI certificate lifecycle' {
     BeforeAll {
       New-SubordinateCA -Name sub_ca1
       New-SubordinateCA -Name sub_ca2 -PermittedDNS foo.com, bar.com, baz.com
-      [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+      [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
       $subCa1 = [X509Certificate2]::new((Join-Path $TestDrive sub sub_ca1 ca.crt))
-      [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+      [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
       $subCa2 = [X509Certificate2]::new((Join-Path $TestDrive sub sub_ca2 ca.crt))
     }
 
@@ -157,7 +158,7 @@ Describe 'PKI certificate lifecycle' {
         BeforeAll {
           [string]$rootCert = Get-Content 'TestDrive:\root\root_ca\ca.crt' -Raw
           $rootCert = $rootCert.Trim()
-          [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+          [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
           $regex = '-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----'
         }
 

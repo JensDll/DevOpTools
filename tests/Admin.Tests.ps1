@@ -1,4 +1,6 @@
-﻿[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'IsAdmin')]
+﻿using namespace System.Diagnostics.CodeAnalysis
+
+[SuppressMessageAttribute('PSReviewUnusedParameter', 'IsAdmin')]
 param (
   [Parameter(Mandatory)]
   [bool]$IsAdmin

@@ -1,4 +1,6 @@
-﻿BeforeAll {
+﻿using namespace System.Diagnostics.CodeAnalysis
+
+BeforeAll {
   . "$PSScriptRoot\__fixtures__\import.ps1"
 }
 
@@ -69,7 +71,7 @@ Describe 'AWSCredentials' {
 
           # Act
           New-AWSCredential -Username 'TestUser' -Recreate:$withRecreate
-          [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+          [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
           $credentials = Read-AWSCredential -Username 'TestUser'
         }
 

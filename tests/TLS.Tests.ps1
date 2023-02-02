@@ -1,4 +1,5 @@
-﻿using namespace System.Security.Cryptography.X509Certificates
+﻿using namespace System.Security.Cryptography
+using namespace System.Security.Cryptography.X509Certificates
 
 BeforeAll {
   . "$PSScriptRoot\__fixtures__\import.ps1"
@@ -73,10 +74,10 @@ Describe 'New-SubordinateCA' {
     It 'Has correct name constraints' {
       $extensions = $subCa.Extensions | Where-Object { $_.Oid.Value -eq '2.5.29.30' }
       $extensions | Should -HaveCount 1
-      [X509Extension]$nameConstraints = $extensions
-      $result = $nameConstraints.Format($true)
-      $result | Should -Match 'DNS Name=foo.com'
-      $result | Should -Match 'DNS Name=bar.com'
+      $nameConstraints = [X509Extension]$extensions[0]
+      $result = [System.Text.Encoding]::Latin1.GetString($nameConstraints.RawData)
+      $result | Should -BeLike '*foo.com*'
+      $result | Should -BeLike '*bar.com*'
     }
   }
 }
@@ -101,7 +102,7 @@ Describe 'PKI certificate lifecycle' {
     }
 
     Describe 'Get-SuboridinateCAName' {
-      It 'Returns the names of registered subordinate certificate authorities' {
+      It 'Returns the names of registered subordinate CAs' {
         Get-SuboridinateCAName | Should -BeExactly 'sub_ca1', 'sub_ca2'
       }
     }

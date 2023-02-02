@@ -1,6 +1,6 @@
 ﻿@{
   RootModule        = 'DevOpTools.psm1'
-  ModuleVersion     = '0.0.13'
+  ModuleVersion     = '0.0.14'
   GUID              = '0d0e7a69-7247-4979-a599-73850459367e'
   Author            = 'Jens Döllmann'
   Copyright         = 'Copyright (c) 2022 Jens Döllmann'

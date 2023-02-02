@@ -154,7 +154,7 @@ Describe 'PKI certificate lifecycle' {
         'TestDrive:\sub_ca2.key' | Should -Exist
       }
 
-      Context 'Creates the full certificate chain' -Tag 'Only' {
+      Context 'Creates the full certificate chain' {
         BeforeAll {
           [string]$rootCert = Get-Content 'TestDrive:\root\root_ca\ca.crt' -Raw
           $rootCert = $rootCert.Trim()

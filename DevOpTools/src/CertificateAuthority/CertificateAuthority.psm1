@@ -78,6 +78,6 @@ $(($PermittedDNS | ForEach-Object { 'permitted;DNS.' + [int]$i++ +  " = $_" }) -
 
 class SubordinateCertificateAuthorities : System.Management.Automation.IValidateSetValuesGenerator {
   [string[]] GetValidValues() {
-    return Get-SuboridinateCAName
+    return Get-SubordinateCAName
   }
 }

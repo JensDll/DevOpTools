@@ -18,7 +18,7 @@
     # TLS
     'New-RootCA',
     'New-SubordinateCA',
-    'Get-SuboridinateCAName',
+    'Get-SubordinateCAName',
     'New-Certificate',
     'Install-RootCA',
     'Uninstall-RootCA',

@@ -57,7 +57,7 @@ function New-SubordinateCA() {
 .DESCRIPTION
 Returns the names of available subordinate certificate authorities (CAs).
 #>
-function Get-SuboridinateCAName() {
+function Get-SubordinateCAName() {
   Get-ChildItem ([SubordinateCertificateAuthority]::BaseDir) -Name
 }
 

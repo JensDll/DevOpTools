@@ -103,9 +103,9 @@ Describe 'PKI certificate lifecycle' {
       $script:subCa2 = [X509Certificate2]::new((Join-Path $TestDrive sub sub_ca2 ca.crt))
     }
 
-    Describe 'Get-SuboridinateCAName' {
+    Describe 'Get-SubordinateCAName' {
       It 'Returns the names of registered subordinate CAs' {
-        Get-SuboridinateCAName | Should -BeExactly 'sub_ca1', 'sub_ca2'
+        Get-SubordinateCAName | Should -BeExactly 'sub_ca1', 'sub_ca2'
       }
     }
 

@@ -96,22 +96,27 @@ function New-Certificate() {
   )
 
   if (-not (Test-Path $Request)) {
-    throw "Request file '$Request' does not exist!"
+    throw "The request config file at '$Request' does not exist!"
   }
 
   if (-not (Test-Path $Destination)) {
     New-Item $Destination -ItemType Directory 1> $null
   }
 
-  $script = "$PSScriptRoot\CertificateAuthority\new_cert.sh" | ConvertTo-WSLPath
-  bash "$script" `
-    --sub-ca-home (ConvertTo-WSLPath -Path "$([SubordinateCertificateAuthority]::BaseDir)\$Issuer") `
-    --request (ConvertTo-WSLPath -Path $Request) `
-    --destination (ConvertTo-WSLPath -Path $Destination) `
-    --name $Name `
-    --type $Type
+  $rootCaDir = "$([RootCertificateAuthority]::BaseDir)\root_ca"
+  $subCaDir = "$([SubordinateCertificateAuthority]::BaseDir)\$Issuer"
 
-  Remove-Item $Destination\$Name.csr -ErrorAction Ignore
+  try {
+    $script = "$PSScriptRoot\CertificateAuthority\new_cert.sh" | ConvertTo-WSLPath
+    bash "$script" --sub-ca-home (ConvertTo-WSLPath "$subCaDir") `
+      --request (ConvertTo-WSLPath "$Request") `
+      --destination (ConvertTo-WSLPath "$Destination") `
+      --name $Name --type $Type
+
+    Get-Content -Path "$subCaDir\ca.crt", "$rootCaDir\ca.crt" | Add-Content "$Destination\$Name.crt"
+  } finally {
+    Remove-Item "$Destination\$Name.csr" -ErrorAction Ignore
+  }
 }
 
 <#

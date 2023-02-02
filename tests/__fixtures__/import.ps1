@@ -1,5 +1,7 @@
-﻿if ($DEVOPTOOLS_TEST_INSTALLED) {
-  Import-Module DevOpTools -Force
+﻿Remove-Module DevOpTools -Force -ErrorAction Ignore
+
+if ($DEVOPTOOLS_TEST_INSTALLED) {
+  Import-Module DevOpTools
 } else {
-  Import-Module $PSScriptRoot\..\..\DevOpTools -Force
+  Import-Module $PSScriptRoot\..\..\DevOpTools
 }

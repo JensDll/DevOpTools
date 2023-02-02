@@ -7,7 +7,7 @@ Describe 'DNS' {
     $hostFilePath = "$TestDrive\hosts"
 
     InModuleScope DevopTools {
-      $script:hostFilePath = $args[0]
+      $script:HostFilePath = $args[0]
     } -ArgumentList $hostFilePath
 
     New-Item $hostFilePath -Force -ItemType File

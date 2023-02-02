@@ -3,7 +3,7 @@
 }
 
 Describe 'ConvertTo-WSLPath' {
-  Describe "<path> -> <expected>" -ForEach @(
+  Context "<path> -> <expected>" -ForEach @(
     @{ Path = 'A:\Windows\System32'; Expected = '/mnt/a/Windows/System32' }
     @{ Path = 'B:\Users\Alice\src\DevOpTools\'; Expected = '/mnt/b/Users/Alice/src/DevOpTools/' }
     @{ Path = 'C:\Program Files (x86)\dotnet\'; Expected = '/mnt/c/Program Files (x86)/dotnet/' }

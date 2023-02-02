@@ -1,9 +1,11 @@
-﻿using namespace System.Security.Cryptography
+﻿using namespace System.Text.RegularExpressions
+using namespace System.Security.Cryptography
 using namespace System.Security.Cryptography.X509Certificates
 
 BeforeAll {
   . "$PSScriptRoot\__fixtures__\import.ps1"
 }
+
 
 Describe 'New-RootCA' {
   BeforeAll {
@@ -14,7 +16,8 @@ Describe 'New-RootCA' {
     } -ArgumentList "$TestDrive"
 
     New-RootCA
-    $script:rootCa = [X509Certificate2]::new((Join-Path $TestDrive root root_ca ca.crt))
+    [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+    $rootCa = [X509Certificate2]::new((Join-Path $TestDrive root root_ca ca.crt))
   }
 
   It 'Creates the right number of files' {
@@ -42,42 +45,60 @@ Describe 'New-SubordinateCA' {
       [RootCertificateAuthority]::BaseDir = Join-Path $args[0] root
       [SubordinateCertificateAuthority]::BaseDir = Join-Path $args[0] sub
     } -ArgumentList "$TestDrive"
-
-    New-RootCA
-    New-SubordinateCA -Name ca
-    $script:rootCa = [X509Certificate2]::new((Join-Path $TestDrive root root_ca ca.crt))
-    $script:subCa = [X509Certificate2]::new((Join-Path $TestDrive sub ca ca.crt))
   }
 
-  It 'Creates the right number of files' {
-    Get-ChildItem 'TestDrive:\sub\ca' -File | Should -HaveCount 3
-    Get-ChildItem 'TestDrive:\sub\ca\private' | Should -HaveCount 1
+  Context 'Without a root CA' {
+    It 'Subordinate CA creation fails' {
+      { New-SubordinateCA -Name ca } | Should -Throw
+    }
   }
 
-  It 'Creates the subordinate CA' {
-    'TestDrive:\sub\ca\ca.crt' | Should -Exist
-    'TestDrive:\sub\ca\ca.csr' | Should -Exist
-    'TestDrive:\sub\ca\ca.pfx' | Should -Exist
-    'TestDrive:\sub\ca\private\ca.key' | Should -Exist
-  }
-
-  It 'Is issued by the root CA' {
-    $subCa.Issuer | Should -Be $rootCa.Subject
-  }
-
-  Describe 'With name constraints' {
+  Context 'With a root CA' {
     BeforeAll {
-      New-SubordinateCA -Name ca_name_constraints -PermittedDNS foo.com, bar.com
-      $script:subCa = [X509Certificate2]::new((Join-Path $TestDrive sub ca_name_constraints ca.crt))
+      New-RootCA
+      [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+      $rootCa = [X509Certificate2]::new((Join-Path $TestDrive root root_ca ca.crt))
     }
 
-    It 'Has correct name constraints' {
-      $extensions = $subCa.Extensions | Where-Object { $_.Oid.Value -eq '2.5.29.30' }
-      $extensions | Should -HaveCount 1
-      $nameConstraints = [X509Extension]$extensions[0]
-      $result = [System.Text.Encoding]::Latin1.GetString($nameConstraints.RawData)
-      $result | Should -BeLike '*foo.com*'
-      $result | Should -BeLike '*bar.com*'
+    Context 'Without extensions' {
+      BeforeAll {
+        New-SubordinateCA -Name ca
+        [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+        $subCa = [X509Certificate2]::new((Join-Path $TestDrive sub ca ca.crt))
+      }
+
+      It 'Creates the right number of files' {
+        Get-ChildItem 'TestDrive:\sub\ca' -File | Should -HaveCount 3
+        Get-ChildItem 'TestDrive:\sub\ca\private' | Should -HaveCount 1
+      }
+
+      It 'Creates the subordinate CA' {
+        'TestDrive:\sub\ca\ca.crt' | Should -Exist
+        'TestDrive:\sub\ca\ca.csr' | Should -Exist
+        'TestDrive:\sub\ca\ca.pfx' | Should -Exist
+        'TestDrive:\sub\ca\private\ca.key' | Should -Exist
+      }
+
+      It 'Is issued by the root CA' {
+        $subCa.Issuer | Should -Be $rootCa.Subject
+      }
+    }
+
+    Context 'With name constraints' {
+      BeforeAll {
+        New-SubordinateCA -Name ca_name_constraints -PermittedDNS foo.com, bar.com 1> $null
+        [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+        $subCa = [X509Certificate2]::new((Join-Path $TestDrive sub ca_name_constraints ca.crt))
+      }
+
+      It 'Has correct name constraints' {
+        $extensions = $subCa.Extensions | Where-Object { $_.Oid.Value -eq '2.5.29.30' }
+        $extensions | Should -HaveCount 1
+        $nameConstraints = [X509Extension]$extensions[0]
+        $result = [System.Text.Encoding]::Latin1.GetString($nameConstraints.RawData)
+        $result | Should -BeLike '*foo.com*'
+        $result | Should -BeLike '*bar.com*'
+      }
     }
   }
 }
@@ -98,9 +119,10 @@ Describe 'PKI certificate lifecycle' {
     BeforeAll {
       New-SubordinateCA -Name sub_ca1
       New-SubordinateCA -Name sub_ca2 -PermittedDNS foo.com, bar.com, baz.com
-
-      $script:subCa1 = [X509Certificate2]::new((Join-Path $TestDrive sub sub_ca1 ca.crt))
-      $script:subCa2 = [X509Certificate2]::new((Join-Path $TestDrive sub sub_ca2 ca.crt))
+      [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+      $subCa1 = [X509Certificate2]::new((Join-Path $TestDrive sub sub_ca1 ca.crt))
+      [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+      $subCa2 = [X509Certificate2]::new((Join-Path $TestDrive sub sub_ca2 ca.crt))
     }
 
     Describe 'Get-SubordinateCAName' {
@@ -129,6 +151,40 @@ Describe 'PKI certificate lifecycle' {
       It 'Creates the keys' {
         'TestDrive:\sub_ca1.key' | Should -Exist
         'TestDrive:\sub_ca2.key' | Should -Exist
+      }
+
+      Context 'Creates the full certificate chain' -Tag 'Only' {
+        BeforeAll {
+          [string]$rootCert = Get-Content 'TestDrive:\root\root_ca\ca.crt' -Raw
+          $rootCert = $rootCert.Trim()
+          [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+          $regex = '-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----'
+        }
+
+        Context 'Matching <_>' -ForEach @('sub_ca1', 'sub_ca2') {
+          BeforeAll {
+            [string]$subCert = Get-Content "TestDrive:\sub\$_\ca.crt" -Raw
+            $subCert = $subCert.Trim()
+            [string]$cert = Get-Content "TestDrive:\$($_).crt" -Raw
+            [MatchCollection]$matches = [regex]::Matches($cert, $regex, [RegexOptions]::Singleline)
+          }
+
+          It 'Contains 3 certificates' {
+            $matches | Should -HaveCount 3
+          }
+
+          It 'Contains the subordinate certificate' {
+            $match = [System.Text.RegularExpressions.Match]$matches[1]
+            $actual = $match.Value -replace '\r', ''
+            $actual | Should -BeExactly $subCert
+          }
+
+          It 'Contains the root certificate' {
+            $match = [System.Text.RegularExpressions.Match]$matches[2]
+            $actual = $match.Value -replace '\r', ''
+            $actual | Should -BeExactly $rootCert
+          }
+        }
       }
     }
   }

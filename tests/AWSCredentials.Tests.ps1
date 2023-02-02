@@ -69,7 +69,8 @@ Describe 'AWSCredentials' {
 
           # Act
           New-AWSCredential -Username 'TestUser' -Recreate:$withRecreate
-          $script:credentials = Read-AWSCredential -Username 'TestUser'
+          [SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments')]
+          $credentials = Read-AWSCredential -Username 'TestUser'
         }
 
         # Assert

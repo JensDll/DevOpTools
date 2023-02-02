@@ -1,8 +1,7 @@
 #!/bin/bash
 
-CA_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-export CA_ROOT
-
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+declare -r script_dir
 declare -r reset="\033[0m"
 declare -r red="\033[0;31m"
 declare -r yellow="\033[0;33m"
@@ -21,26 +20,21 @@ __warn() {
   echo -e "${yellow}warning: $*${reset}"
 }
 
+declare -r name="$1"
+shift
+
 while [[ $# -gt 0 ]]
 do
-  # Replace leading "--" with "-" and convert to lowercase
   declare -l opt="${1/#--/-}"
 
   case "$opt" in
   -\?|-help|-h)
     __usage
     ;;
-  -home)
+  -root)
     shift
-    export CA_SUB_HOME="$1"
-    ;;
-  -home-root)
-    shift
-    export CA_ROOT_HOME="$1"
-    ;;
-  -name)
-    shift
-    declare -r name="$1"
+    export ROOT_CA_HOME="$1/root/root_ca"
+    export SUB_CA_HOME="$1/sub/$name"
     ;;
   *)
     __error "Unknown option: $1" && __usage
@@ -50,17 +44,13 @@ do
   shift
 done
 
-[[ -z $CA_SUB_HOME ]] && __error "Missing value for parameter --home" && __usage
-[[ -z $CA_ROOT_HOME ]] && __error "Missing value for parameter --home-root" && __usage
-[[ -z $name ]] && __error "Missing value for parameter --name" && __usage
+declare -r root_config="$script_dir/root.conf"
+declare -r sub_config="$script_dir/sub.conf"
 
-declare -r root_config="$CA_ROOT/root.conf"
-declare -r sub_config="$CA_ROOT/sub.conf"
-
-declare -r csr="$CA_SUB_HOME/ca.csr"
-declare -r key="$CA_SUB_HOME/private/ca.key"
-declare -r crt="$CA_SUB_HOME/ca.crt"
-declare -r pfx="$CA_SUB_HOME/ca.pfx"
+declare -r csr="$SUB_CA_HOME/ca.csr"
+declare -r key="$SUB_CA_HOME/private/ca.key"
+declare -r crt="$SUB_CA_HOME/ca.crt"
+declare -r pfx="$SUB_CA_HOME/ca.pfx"
 
 openssl req -new -config "$sub_config" -out "$csr" -keyout "$key" \
   -noenc 2> /dev/null

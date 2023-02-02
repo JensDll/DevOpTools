@@ -22,6 +22,8 @@
     'New-Certificate',
     'Install-RootCA',
     'Uninstall-RootCA',
+    'Remove-RootCa',
+    'Remove-SubordinateCA'
     # DNS
     'Add-DNSEntry',
     'Remove-DNSEntry',

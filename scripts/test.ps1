@@ -12,7 +12,7 @@ if ($Installed) {
 
 $config = New-PesterConfiguration
 
-$testDir = Join-Path -Path $PSScriptRoot .. tests
+$testDir = Join-Path $PSScriptRoot .. tests
 
 $config.Run.Container = $(
   (New-PesterContainer -Path $testDir\AWSCredentials.Tests.ps1),

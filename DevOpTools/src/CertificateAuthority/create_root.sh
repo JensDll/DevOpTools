@@ -1,8 +1,7 @@
 #!/bin/bash
 
-CA_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-export CA_ROOT
-
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+declare -r script_dir
 declare -r reset="\033[0m"
 declare -r red="\033[0;31m"
 declare -r yellow="\033[0;33m"
@@ -23,16 +22,15 @@ __warn() {
 
 while [[ $# -gt 0 ]]
 do
-  # Replace leading "--" with "-" and convert to lowercase
   declare -l opt="${1/#--/-}"
 
   case "$opt" in
   -\?|-help|-h)
     __usage
     ;;
-  -home)
+  -root)
     shift
-    export CA_ROOT_HOME="$1"
+    export ROOT_CA_HOME="$1/root/root_ca"
     ;;
   *)
     __error "Unknown option: $1" && __usage
@@ -42,14 +40,13 @@ do
   shift
 done
 
-[[ -z $CA_ROOT_HOME ]] && __error "Missing value for parameter --home" && __usage
 
-declare -r config="$CA_ROOT/root.conf"
+declare -r config="$script_dir/root.conf"
 
-declare -r csr="$CA_ROOT_HOME/ca.csr"
-declare -r key="$CA_ROOT_HOME/private/ca.key"
-declare -r crt="$CA_ROOT_HOME/ca.crt"
-declare -r pfx="$CA_ROOT_HOME/ca.pfx"
+declare -r csr="$ROOT_CA_HOME/ca.csr"
+declare -r key="$ROOT_CA_HOME/private/ca.key"
+declare -r crt="$ROOT_CA_HOME/ca.crt"
+declare -r pfx="$ROOT_CA_HOME/ca.pfx"
 
 openssl req -new -config "$config" -out "$csr" -keyout "$key" \
   -noenc 2> /dev/null

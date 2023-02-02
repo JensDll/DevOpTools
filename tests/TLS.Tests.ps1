@@ -1,4 +1,5 @@
-﻿using namespace System.Security.Cryptography.X509Certificates
+﻿using namespace System.Security.Cryptography
+using namespace System.Security.Cryptography.X509Certificates
 
 BeforeAll {
   . "$PSScriptRoot\__fixtures__\import.ps1"
@@ -6,12 +7,13 @@ BeforeAll {
 
 Describe 'New-RootCA' {
   BeforeAll {
-    InModuleScope DevOpTools {
-      $script:CaRootDir = $args[0]
-    } -ArgumentList "$TestDrive\root"
+    InModuleScope CertificateAuthority {
+      [CertificateAuthority]::BaseDir = $args[0]
+      [CertificateAuthority]::BaseDirWsl = $args[0] | ConvertTo-WSLPath
+      [RootCertificateAuthority]::BaseDir = Join-Path $args[0] root
+    } -ArgumentList "$TestDrive"
 
-    New-RootCA -Verbose
-
+    New-RootCA
     $script:rootCa = [X509Certificate2]::new((Join-Path $TestDrive root root_ca ca.crt))
   }
 
@@ -34,13 +36,15 @@ Describe 'New-RootCA' {
 
 Describe 'New-SubordinateCA' {
   BeforeAll {
-    InModuleScope DevOpTools {
-      $script:CaRootDir = $args[0]
-      $script:CaSubDir = $args[1]
-    } -ArgumentList "$TestDrive\root", "$TestDrive\sub"
+    InModuleScope CertificateAuthority {
+      [CertificateAuthority]::BaseDir = $args[0]
+      [CertificateAuthority]::BaseDirWsl = $args[0] | ConvertTo-WSLPath
+      [RootCertificateAuthority]::BaseDir = Join-Path $args[0] root
+      [SubordinateCertificateAuthority]::BaseDir = Join-Path $args[0] sub
+    } -ArgumentList "$TestDrive"
 
+    New-RootCA
     New-SubordinateCA -Name ca
-
     $script:rootCa = [X509Certificate2]::new((Join-Path $TestDrive root root_ca ca.crt))
     $script:subCa = [X509Certificate2]::new((Join-Path $TestDrive sub ca ca.crt))
   }
@@ -63,24 +67,29 @@ Describe 'New-SubordinateCA' {
 
   Describe 'With name constraints' {
     BeforeAll {
-      New-SubordinateCA -Name ca_name_constraints -PermittedDNS foo.com, bar.com, baz.com
-
+      New-SubordinateCA -Name ca_name_constraints -PermittedDNS foo.com, bar.com
       $script:subCa = [X509Certificate2]::new((Join-Path $TestDrive sub ca_name_constraints ca.crt))
     }
 
-    It 'Has name constraints' {
+    It 'Has correct name constraints' {
       $extensions = $subCa.Extensions | Where-Object { $_.Oid.Value -eq '2.5.29.30' }
       $extensions | Should -HaveCount 1
+      $nameConstraints = [X509Extension]$extensions[0]
+      $result = [System.Text.Encoding]::Latin1.GetString($nameConstraints.RawData)
+      $result | Should -BeLike '*foo.com*'
+      $result | Should -BeLike '*bar.com*'
     }
   }
 }
 
 Describe 'PKI certificate lifecycle' {
   BeforeAll {
-    InModuleScope DevOpTools {
-      $script:CaRootDir = $args[0]
-      $script:CaSubDir = $args[1]
-    } -ArgumentList "$TestDrive\root", "$TestDrive\sub"
+    InModuleScope CertificateAuthority {
+      [CertificateAuthority]::BaseDir = $args[0]
+      [CertificateAuthority]::BaseDirWsl = $args[0] | ConvertTo-WSLPath
+      [RootCertificateAuthority]::BaseDir = Join-Path $args[0] root
+      [SubordinateCertificateAuthority]::BaseDir = Join-Path $args[0] sub
+    } -ArgumentList "$TestDrive"
 
     New-RootCA
   }
@@ -95,7 +104,7 @@ Describe 'PKI certificate lifecycle' {
     }
 
     Describe 'Get-SuboridinateCAName' {
-      It 'Returns the names of registered subordinate certificate authorities' {
+      It 'Returns the names of registered subordinate CAs' {
         Get-SuboridinateCAName | Should -BeExactly 'sub_ca1', 'sub_ca2'
       }
     }
@@ -120,6 +129,58 @@ Describe 'PKI certificate lifecycle' {
       It 'Creates the keys' {
         'TestDrive:\sub_ca1.key' | Should -Exist
         'TestDrive:\sub_ca2.key' | Should -Exist
+      }
+    }
+  }
+}
+
+Describe 'Cleanup' {
+  BeforeAll {
+    InModuleScope CertificateAuthority {
+      [CertificateAuthority]::BaseDir = $args[0]
+      [CertificateAuthority]::BaseDirWsl = $args[0] | ConvertTo-WSLPath
+      [RootCertificateAuthority]::BaseDir = Join-Path $args[0] root
+      [SubordinateCertificateAuthority]::BaseDir = Join-Path $args[0] sub
+    } -ArgumentList "$TestDrive"
+
+    New-RootCA
+    New-SubordinateCA -Name sub_ca1
+    New-SubordinateCA -Name sub_ca2
+  }
+
+  It 'Created the certificates' {
+    'TestDrive:\root\root_ca\ca.crt' | Should -Exist
+    'TestDrive:\sub\sub_ca1\ca.crt' | Should -Exist
+    'TestDrive:\sub\sub_ca2\ca.crt' | Should -Exist
+  }
+
+  Describe 'Remove-RootCA' {
+    BeforeAll {
+      Mock -ModuleName DevOpTools Uninstall-RootCA {}
+      Remove-RootCA
+    }
+
+    It 'Removes the root CA' {
+      'TestDrive:\root\root_ca' | Should -Not -Exist
+    }
+
+    It 'Calls Uninstall-RootCA' {
+      Should -Invoke -CommandName Uninstall-RootCA -ModuleName DevOpTools -Scope Describe -Times 1
+    }
+  }
+
+  Describe 'Remove-SubordinateCA' {
+    It 'Failes if the subordinate CA does not exist' {
+      { Remove-SubordinateCA -Name 'does_not_exist' } | Should -Throw
+    }
+
+    Context 'Remove <_>' -ForEach @('sub_ca1', 'sub_ca2') {
+      BeforeAll {
+        Remove-SubordinateCA -Name $_
+      }
+
+      It 'Removes the subordinate CA' {
+        "TestDrive:\sub\$_" | Should -Not -Exist
       }
     }
   }

@@ -1,1 +1,1 @@
-﻿$env:DEVOPTOOLS_HOME = Join-Path -Path $PSScriptRoot .. .data
+﻿$env:DEVOPTOOLS_HOME = Join-Path $HOME .DevOpTools

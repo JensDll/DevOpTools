@@ -1,9 +1,6 @@
 ﻿using namespace System.Security.Cryptography.X509Certificates
 
-using module .\ValidateSet
-
-$CaRootDir = Join-Path $env:DEVOPTOOLS_HOME ca root
-$CaSubDir = Join-Path $env:DEVOPTOOLS_HOME ca sub
+using module .\CertificateAuthority
 
 <#
 .DESCRIPTION
@@ -13,22 +10,19 @@ function New-RootCA() {
   [CmdletBinding()]
   param()
 
-  if (Test-CA -Root $CaRootDir -Name root_ca) {
+  if ([RootCertificateAuthority]::Exists()) {
     Write-Warning 'Root CA already exists (skipping)'
     return
   }
 
-  $rootCa = Initialize-CA -Root $CaRootDir -Name root_ca
-
-  $script = "$PSScriptRoot\CertificateAuthority\create_root.sh" | ConvertTo-WSLPath
-  bash $script --home $rootCa.Home
+  $rootCa = [RootCertificateAuthority]::new()
+  $rootCa.Create()
 }
 
 <#
 .DESCRIPTION
-Creates a new subordinate certificate authority (CA) from the root CA
-if one with the given name doesn't exist. If the root CA doesn't exist,
-New-SubordinateCA will create it with a warning.
+Creates a new subordinate CA from the root CA,
+if one with the given name doesn't exist.
 
 .PARAMETER Name
 The name of the new subordinate CA. It will be used a reference
@@ -42,49 +36,21 @@ function New-SubordinateCA() {
   [CmdletBinding()]
   param(
     [Parameter(Mandatory)]
-    [string] $Name,
-    [string[]] $PermittedDNS
+    [string]$Name,
+    [string[]]$PermittedDNS
   )
 
-  if (-not (Test-CA -Root $CaRootDir -Name root_ca)) {
-    Write-Warning 'Subordinate CA cannot be created without a root CA (creating)'
-    New-RootCA
+  if (-not [RootCertificateAuthority]::Exists()) {
+    throw 'Subordinate CA cannot be created without a root CA'
   }
 
-  if (Test-CA -Root $CaSubDir -Name $Name) {
+  if ([SubordinateCertificateAuthority]::Exists($Name)) {
     Write-Warning "Subordinate CA with name '$Name' already exists (skipping)"
     return
   }
 
-  $subCa = Initialize-CA -Root $CaSubDir -Name $Name
-
-  $subCaExt = @"
-[sub_ca_ext]
-authorityKeyIdentifier  = keyid:always
-basicConstraints = critical,CA:true,pathlen:0
-extendedKeyUsage = serverAuth,clientAuth
-keyUsage = critical,keyCertSign,cRLSign
-subjectKeyIdentifier = hash
-"@
-
-  if ($PermittedDNS) {
-    $subCaExt += @"
-
-nameConstraints = @name_constraints
-[name_constraints]
-excluded;IP.0 = 0.0.0.0/0.0.0.0
-excluded;IP.1 = 0:0:0:0:0:0:0:0/0:0:0:0:0:0:0:0
-$(($PermittedDNS | ForEach-Object { 'permitted;DNS.' + $i++ +  " = $_" }) -join [System.Environment]::NewLine)
-"@
-  }
-
-  Out-File -FilePath "$CaRootDir\root_ca\include\sub_ca_ext.conf" -InputObject $subCaExt
-
-  $script = "$PSScriptRoot\CertificateAuthority\create_sub.sh" | ConvertTo-WSLPath
-  bash $script `
-    --home $subCa.Home `
-    --home-root (Join-Path $CaRootDir root_ca | ConvertTo-WSLPath) `
-    --name $Name
+  $subCa = [SubordinateCertificateAuthority]::new($Name, $PermittedDNS)
+  $subCa.Create()
 }
 
 <#
@@ -92,7 +58,7 @@ $(($PermittedDNS | ForEach-Object { 'permitted;DNS.' + $i++ +  " = $_" }) -join 
 Returns the names of available subordinate certificate authorities (CAs).
 #>
 function Get-SuboridinateCAName() {
-  Get-ChildItem $CaSubDir -Name
+  Get-ChildItem ([SubordinateCertificateAuthority]::BaseDir) -Name
 }
 
 <#
@@ -119,7 +85,7 @@ function New-Certificate() {
   [CmdletBinding()]
   param(
     [Parameter(Mandatory)]
-    [ValidateSet([ValidIssuer])]
+    [ValidateSet([SubordinateCertificateAuthorities])]
     [string] $Issuer,
     [Parameter(Mandatory)]
     [string] $Request,
@@ -129,14 +95,8 @@ function New-Certificate() {
     [string] $Destination = (Resolve-Path .)
   )
 
-  if (-not (Test-CA -Root $CaSubDir -Name $Issuer)) {
-    Write-Error "Subordinate CA '$Issuer' does not exist!"
-    return
-  }
-
   if (-not (Test-Path $Request)) {
-    Write-Error "Request file '$Request' does not exist!"
-    return
+    throw "Request file '$Request' does not exist!"
   }
 
   if (-not (Test-Path $Destination)) {
@@ -144,9 +104,8 @@ function New-Certificate() {
   }
 
   $script = "$PSScriptRoot\CertificateAuthority\new_cert.sh" | ConvertTo-WSLPath
-  bash $script `
-    --home (Join-Path $CaSubDir $Issuer | ConvertTo-WSLPath) `
-    --home-root (Join-Path $CaRootDir root_ca | ConvertTo-WSLPath) `
+  bash "$script" `
+    --sub-ca-home (ConvertTo-WSLPath -Path "$([SubordinateCertificateAuthority]::BaseDir)\$Issuer") `
     --request (ConvertTo-WSLPath -Path $Request) `
     --destination (ConvertTo-WSLPath -Path $Destination) `
     --name $Name `
@@ -157,20 +116,51 @@ function New-Certificate() {
 
 <#
 .DESCRIPTION
-Installs the root certificate authority (CA) into the current user's trusted root store.
+Removes the root CA's resources from the file system and
+uninstalls the root certificate from the current user's trusted root store.
 #>
-function Install-RootCA() {
-  $certPath = Join-Path $CaRootDir root_ca ca.crt
-  Install-Certificate -Path $certPath -StoreName Root -FriendlyName 'DevOpTools Development Root CA'
+function Remove-RootCa() {
+  [CmdletBinding(SupportsShouldProcess)]
+  param()
+  Uninstall-RootCA
+  Remove-Item "$([RootCertificateAuthority]::BaseDir)\root_ca" -Recurse -Force
 }
 
 <#
 .DESCRIPTION
-Uninstalls the root certificate authority (CA) from the current user's trusted root store.
+Removes the subordinate CA's resources with the given name from the file system.
+#>
+function Remove-SubordinateCA() {
+  [CmdletBinding(SupportsShouldProcess)]
+  param(
+    [Parameter(Mandatory, Position = 0)]
+    [ValidateSet([SubordinateCertificateAuthorities])]
+    [string]$Name
+  )
+
+  Remove-Item "$([SubordinateCertificateAuthority]::BaseDir)\$Name" -Recurse -Force
+}
+
+<#
+.DESCRIPTION
+Installs the root certificate into the current user's trusted root store.
+#>
+function Install-RootCA() {
+  $certPath = Join-Path ([RootCertificateAuthority]::BaseDir) root_ca ca.crt
+  If (Test-Path $certPath) {
+    Install-Certificate -Path $certPath -StoreName Root -FriendlyName 'DevOpTools Development Root CA'
+  }
+}
+
+<#
+.DESCRIPTION
+Uninstalls the root certificate from the current user's trusted root store.
 #>
 function Uninstall-RootCA() {
-  $certPath = Join-Path $CaRootDir root_ca ca.crt
-  Uninstall-Certificate -Path $certPath -StoreName Root
+  $certPath = Join-Path ([RootCertificateAuthority]::BaseDir) root_ca ca.crt
+  if (Test-Path $certPath) {
+    Uninstall-Certificate -Path $certPath -StoreName Root
+  }
 }
 
 function Install-Certificate() {
@@ -187,7 +177,7 @@ function Install-Certificate() {
 
   try {
     $cert = [X509Certificate2]::new($Path)
-    if ($FriendlyName) { $cert.FriendlyName = $FriendlyName }
+    if ($FriendlyName -and $IsWindows) { $cert.FriendlyName = $FriendlyName }
     $store.Add($cert)
   } finally {
     $store.Close()
@@ -234,44 +224,4 @@ function Open-X509Store() {
   }
 
   return $store;
-}
-
-function Test-CA() {
-  [OutputType([bool])]
-  param(
-    [Parameter(Mandatory)]
-    [string]$Root,
-    [Parameter(Mandatory)]
-    [string]$Name
-  )
-
-  return Test-Path "$Root\$Name\ca.pfx" -PathType Leaf
-}
-
-function Initialize-CA() {
-  param(
-    [Parameter(Mandatory)]
-    [string]$Root,
-    [Parameter(Mandatory)]
-    [string]$Name
-  )
-
-  $caHome = Join-Path $Root $Name
-
-  Write-Verbose "Initializing CA '$Name' at '$caHome'"
-
-  Remove-Item -Recurse -Force $caHome -ErrorAction Ignore
-
-  $certs = Join-Path $caHome certs
-  $db = Join-Path $caHome db
-  $private = Join-Path $caHome private
-  $include = Join-Path $caHome include
-  New-Item $certs, $db, $private, $include -ItemType Directory 1> $null
-
-  $dbIndex = Join-Path $db index
-  New-Item $dbIndex -ItemType File 1> $null
-
-  return [PSCustomObject]@{
-    Home = ConvertTo-WSLPath $caHome
-  }
 }

@@ -57,14 +57,12 @@ do
 done
 
 declare -r config="$script_dir/sub.conf"
+declare -r new_key="$script_dir/p256"
 
 declare -r key="$destination/$name.key"
 declare -r csr="$destination/$name.csr"
 declare -r crt="$destination/$name.crt"
 
-openssl genpkey -out "$key" -algorithm EC \
-  -pkeyopt ec_paramgen_curve:P-256 -quiet
-
-openssl req -new -config "$request" -key "$key" -out "$csr"
+openssl req -config "$request" -newkey param:"$new_key" -noenc -out "$csr" -keyout "$key"
 
 openssl ca -config "$config" -in "$csr" -out "$crt" -extensions "${type}_ext" -notext -batch

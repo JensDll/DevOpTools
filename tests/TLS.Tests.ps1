@@ -170,20 +170,14 @@ Describe 'PKI certificate lifecycle' {
             [MatchCollection]$matches = [regex]::Matches($cert, $regex, [RegexOptions]::Singleline)
           }
 
-          It 'Contains 3 certificates' {
-            $matches | Should -HaveCount 3
+          It 'Contains 2 certificates' {
+            $matches | Should -HaveCount 2
           }
 
           It 'Contains the subordinate certificate' {
             $match = [System.Text.RegularExpressions.Match]$matches[1]
             $actual = $match.Value -replace '\r', ''
             $actual | Should -BeExactly $subCert
-          }
-
-          It 'Contains the root certificate' {
-            $match = [System.Text.RegularExpressions.Match]$matches[2]
-            $actual = $match.Value -replace '\r', ''
-            $actual | Should -BeExactly $rootCert
           }
         }
       }

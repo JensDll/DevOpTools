@@ -103,7 +103,6 @@ function New-Certificate() {
     New-Item $Destination -ItemType Directory 1> $null
   }
 
-  $rootCaDir = "$([RootCertificateAuthority]::BaseDir)\root_ca"
   $subCaDir = "$([SubordinateCertificateAuthority]::BaseDir)\$Issuer"
 
   try {
@@ -113,7 +112,7 @@ function New-Certificate() {
       --destination (ConvertTo-WSLPath "$Destination") `
       --name $Name --type $Type
 
-    Get-Content -Path "$subCaDir\ca.crt", "$rootCaDir\ca.crt" | Add-Content "$Destination\$Name.crt"
+    Get-Content -Path "$subCaDir\ca.crt" | Add-Content "$Destination\$Name.crt"
   } finally {
     Remove-Item "$Destination\$Name.csr" -ErrorAction Ignore
   }

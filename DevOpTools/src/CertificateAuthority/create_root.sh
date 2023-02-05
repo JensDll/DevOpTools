@@ -8,7 +8,9 @@ declare -r yellow="\033[0;33m"
 
 __usage()
 {
-  echo "Usage: $(basename "${BASH_SOURCE[0]}") --home <path>"
+  echo "Usage: $(basename "${BASH_SOURCE[0]}")
+    --root <path>       The root path where CA related files are stored.
+"
   exit 2
 }
 
@@ -41,17 +43,17 @@ do
 done
 
 
-declare -r config="$script_dir/root.conf"
+declare -r root_config="$script_dir/root.conf"
 
 declare -r csr="$ROOT_CA_HOME/ca.csr"
 declare -r key="$ROOT_CA_HOME/private/ca.key"
 declare -r crt="$ROOT_CA_HOME/ca.crt"
 declare -r pfx="$ROOT_CA_HOME/ca.pfx"
 
-openssl req -new -config "$config" -out "$csr" -keyout "$key" \
-  -noenc 2> /dev/null
+openssl req -config "$root_config" -out "$csr" -keyout "$key" \
+  -newkey ec -pkeyopt ec_paramgen_curve:P-256
 
-openssl ca -selfsign -config "$config" -in "$csr" -out "$crt" \
+openssl ca -selfsign -config "$root_config" -in "$csr" -out "$crt" \
   -extensions ca_ext -notext -batch
 
 openssl pkcs12 -export -in "$crt" -inkey "$key" \

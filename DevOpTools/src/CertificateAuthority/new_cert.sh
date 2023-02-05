@@ -68,5 +68,3 @@ openssl genpkey -out "$key" -algorithm EC \
 openssl req -new -config "$request" -key "$key" -out "$csr"
 
 openssl ca -config "$config" -in "$csr" -out "$crt" -extensions "${type}_ext" -notext -batch
-
-# cat "$CA_SUB_HOME/ca.crt" "$CA_ROOT_HOME/ca.crt" >> "$crt"

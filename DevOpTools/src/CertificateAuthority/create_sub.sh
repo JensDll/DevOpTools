@@ -52,8 +52,8 @@ declare -r key="$SUB_CA_HOME/private/ca.key"
 declare -r crt="$SUB_CA_HOME/ca.crt"
 declare -r pfx="$SUB_CA_HOME/ca.pfx"
 
-openssl req -new -config "$sub_config" -out "$csr" -keyout "$key" \
-  -noenc 2> /dev/null
+openssl req -config "$sub_config" -out "$csr" -keyout "$key" \
+  -newkey ec -pkeyopt ec_paramgen_curve:P-256
 
 openssl ca -config "$root_config" -in "$csr" -out "$crt" \
   -extensions sub_ca_ext -notext -batch

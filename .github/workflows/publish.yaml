@@ -14,7 +14,7 @@ jobs:
     environment: PowerShell Gallery
     steps:
       - name: Checking out the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Publishing to PowerShell Gallery
         shell: pwsh

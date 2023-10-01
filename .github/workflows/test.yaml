@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checking out the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Running tests
         shell: pwsh
@@ -23,7 +23,7 @@ jobs:
         working-directory: ./scripts
     steps:
       - name: Checking out the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Registering local PowerShell repository
         run: |

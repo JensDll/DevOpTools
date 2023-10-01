@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checking out the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Running PSScriptAnalyzer
         uses: microsoft/psscriptanalyzer-action@v1.1

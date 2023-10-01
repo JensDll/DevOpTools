@@ -10,6 +10,7 @@ Describe 'AWSCredentials' {
 
     InModuleScope DevOpTools {
       $script:CredentialsFilePath = $args[0]
+      function script:aws { throw 'aws not mocked' }
     } -ArgumentList $credentialsFilePath
 
     New-Item $credentialsFilePath -Force -ItemType File

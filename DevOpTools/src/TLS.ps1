@@ -21,11 +21,11 @@ function New-RootCA() {
 
 <#
 .DESCRIPTION
-Creates a new subordinate CA from the root CA,
+Creates a new subordinate certificate authority (CA) from the root CA,
 if one with the given name doesn't exist.
 
 .PARAMETER Name
-The name of the new subordinate CA. It will be used a reference
+The name of the new subordinate CA. It will be used as a reference
 in other command like New-Certificate.
 
 .PARAMETER PermittedDNS
@@ -58,7 +58,7 @@ function New-SubordinateCA() {
 Returns the names of available subordinate certificate authorities (CAs).
 #>
 function Get-SubordinateCAName() {
-  Get-ChildItem ([SubordinateCertificateAuthority]::BaseDir) -Name
+  Get-ChildItem ([SubordinateCertificateAuthority]::BaseDir) -Name -ErrorAction Ignore
 }
 
 <#
@@ -76,7 +76,7 @@ It will be used by the openssl-req command.
 The type of certificate. Valid values are 'server' and 'client'.
 
 .PARAMETER Name
-The name of the key ([name].key) and certificate ([name].crt) file.
+The name of the key (<name>.key) and certificate (<name>.crt) file.
 
 .PARAMETER Destination
 The directory where the key and certificate are created.

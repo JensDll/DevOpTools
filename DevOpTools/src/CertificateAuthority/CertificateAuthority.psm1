@@ -1,5 +1,5 @@
 ﻿class CertificateAuthority {
-  static [string]$BaseDir = (Join-Path $DevOpToolsHome ca)
+  static [string]$BaseDir = (Join-Path $global:DevOpToolsHome ca)
   static [string]$BaseDirWsl = (ConvertTo-WSLPath -Path ([CertificateAuthority]::BaseDir))
 
   [string]$Name

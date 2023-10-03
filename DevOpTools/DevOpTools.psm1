@@ -1,10 +1,10 @@
 ﻿if ($env:DEVOPTOOLS_HOME) {
-  $script:DevOpToolsHome = $env:DEVOPTOOLS_HOME
+  $global:DevOpToolsHome = $env:DEVOPTOOLS_HOME
 } else {
   if ($env:XDG_CONFIG_HOME) {
-    $script:DevOpToolsHome = Join-Path $env:XDG_CONFIG_HOME DevOpTools
+    $global:DevOpToolsHome = Join-Path $env:XDG_CONFIG_HOME DevOpTools
   } else {
-    $script:DevOpToolsHome = Join-Path $HOME .config DevOpTools
+    $global:DevOpToolsHome = Join-Path $HOME .config DevOpTools
   }
 }
 

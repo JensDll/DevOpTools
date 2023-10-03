@@ -1,4 +1,4 @@
-﻿$CredentialsFilePath = Join-Path $global:DevOpToolsHome aws_credentials
+﻿$CredentialsFilePath = Join-Path $DevOpToolsHome aws_credentials
 
 <#
 .DESCRIPTION

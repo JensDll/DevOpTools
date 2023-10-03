@@ -6,7 +6,7 @@
   Copyright         = 'Copyright (c) 2022 Jens Döllmann'
   Description       = 'A collection of DevOps related cmdlets.'
   PowerShellVersion = '6.0'
-  ScriptsToProcess  = @('scripts\init.ps1')
+  ScriptsToProcess  = @()
   FunctionsToExport = @(
     # AWS
     'New-AWSCredential',

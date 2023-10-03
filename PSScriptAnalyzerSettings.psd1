@@ -3,6 +3,7 @@
   IncludeDefaultRules = $true
   ExcludeRules        = @(
     'PSUseShouldProcessForStateChangingFunctions',
-    'PSAvoidUsingPositionalParameters'
+    'PSAvoidUsingPositionalParameters',
+    'PSAvoidGlobalVars'
   )
 }
